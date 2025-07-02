@@ -1,16 +1,108 @@
-# lenient_technologies
+# Lenient Technologies
 
-A new Flutter project.
+![License](https://img.shields.io/github/license/karthi-AI-hub/lenient)
+![Flutter](https://img.shields.io/badge/Flutter-3.8.1-blue)
+![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-green)
 
-## Getting Started
+A modern, pixel-perfect Flutter application for seamless form management, PDF generation, and document handling. Built with Material 3, custom fonts, and a beautiful, responsive UI to match real-world business needs.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 🖼️ App Logo
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+<p align="center">
+  <img src="assets/logo.png" alt="App Logo" width="120" />
+</p>
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## 🚀 Features
+
+- ✨ Pixel-perfect, responsive UI (Material 3)
+- 📝 Advanced form creation & management
+- 🖊️ Signature capture and star rating
+- 📅 Date/time picker, dropdowns, and validation
+- 📷 Photo grid (add/remove images)
+- 📄 PDF generation with custom template
+- 👁️ PDF preview and sharing
+- ⬇️ Download and manage documents
+- 🎨 Custom themes, icons, and branding
+- 💾 Local data storage (Hive)
+- 🔄 Cross-platform: Android, iOS, Web
+
+---
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/screenshot_home.png" alt="Home Screen" width="250" />
+  <img src="screenshots/screenshot_downloads.png" alt="Download Screen" width="250" />
+  <img src="screenshots/screenshot_form_entry2.png" alt="Form Entry 2" width="250" />
+  <img src="screenshots/screenshot_form_entry3.png" alt="Form Entry 3" width="250" />
+  <img src="screenshots/image.png" alt="Generated PDF" width="250" />
+</p>
+
+---
+
+## 🛠️ Getting Started
+
+To run this project locally:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/karthi-AI-hub/lenient.git
+   cd lenient
+   ```
+2. **Install dependencies:**
+   ```bash
+   flutter pub get
+   ```
+3. **Run the app:**
+   ```bash
+   flutter run
+   ```
+
+---
+
+## 📁 Folder Structure
+
+```
+lenient_technologies/
+  ├── android/           # Android native code
+  ├── assets/            # Images, icons, fonts, templates
+  ├── ios/               # iOS native code
+  ├── lib/               # Main Dart codebase
+  │   ├── models/        # Data models
+  │   ├── screens/       # App screens (Home, Forms, Download, Entry, PDF Preview)
+  │   ├── theme/         # App theming
+  │   ├── utils/         # Utilities (PDF generator, dialogs, snackbars)
+  │   └── widgets/       # Reusable widgets (AppBar, NavBar)
+  ├── test/              # Unit and widget tests
+  └── web/               # Web support files
+```
+
+---
+
+## 📦 Dependencies
+
+- [Flutter](https://flutter.dev/) 3.8+
+- [hive](https://pub.dev/packages/hive)
+- [hive_flutter](https://pub.dev/packages/hive_flutter)
+- [path_provider](https://pub.dev/packages/path_provider)
+- [uuid](https://pub.dev/packages/uuid)
+- [flutter_svg](https://pub.dev/packages/flutter_svg)
+- [pdf](https://pub.dev/packages/pdf)
+- [printing](https://pub.dev/packages/printing)
+- [image_picker](https://pub.dev/packages/image_picker)
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please open issues and submit pull requests for improvements or bug fixes.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
