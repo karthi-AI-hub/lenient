@@ -140,7 +140,7 @@ Future<Uint8List> generateTaskReportPDF({
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('M/s ${companyName.toUpperCase()}', style: pw.TextStyle(font: poppinsFont, fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                        pw.Text('Mr / Ms / Ms. ${companyName.toUpperCase()}', style: pw.TextStyle(font: poppinsFont, fontWeight: pw.FontWeight.bold, fontSize: 10)),
                         pw.Text(addressLine, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
                         pw.Text(addressCity, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
                         pw.Text('Tel. : $phone', style: pw.TextStyle(font: poppinsFont, fontSize: 10)),

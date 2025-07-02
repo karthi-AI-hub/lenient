@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/forms_screen.dart';
-import 'screens/download_screen.dart';
 import 'widgets/lenient_app_bar.dart';
 import 'widgets/lenient_nav_bar.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -45,7 +44,6 @@ class _MainScaffoldState extends State<MainScaffold> {
   final List<Widget> _screens = const [
     HomeScreen(),
     FormsScreen(),
-    DownloadScreen()
   ];
 
   void _onItemTapped(int index) {

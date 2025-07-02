@@ -1,4 +1,4 @@
-package com.example.lenient_technologies
+package com.nexgen.lenient_technologies
 
 import io.flutter.embedding.android.FlutterActivity
 

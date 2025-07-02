@@ -35,14 +35,6 @@ class LenientNavBar extends StatelessWidget {
           ),
           label: 'Forms',
         ),
-        BottomNavigationBarItem(
-          icon: SvgPicture.asset(
-            'assets/download-icon.svg',
-            color: currentIndex == 2 ? const Color(0xFFB6F5B6) : Colors.black,
-            height: 24,
-          ),
-          label: 'Download',
-        ),
       ],
     );
   }

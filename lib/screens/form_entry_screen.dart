@@ -193,7 +193,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       curve: Curves.easeOut,
     );
 
-    LenientSnackbar.showSuccess(context, 'Form saved for further process.', milliseconds: 1200);
+    LenientSnackbar.showSuccess(context, 'Form saved.', milliseconds: 1200);
     await Future.delayed(const Duration(milliseconds: 1200));
     if (mounted) Navigator.of(context).pop();
   }
@@ -214,102 +214,6 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
     } else if (customerName.isEmpty) {
       FocusScope.of(context).requestFocus(_customerNameFocus);
     }
-  }
-
-  Future<void> _finalizeForm() async {
-    bool valid = _formKey.currentState!.validate();
-    if (!valid) {
-      _focusFirstInvalidField();
-      return;
-    }
-    _formKey.currentState!.save();
-    if ((signaturePoints.isEmpty) && (signaturePreview == null)) {
-      print('signaturePoints: $signaturePoints, signaturePreview: $signaturePreview');
-      LenientSnackbar.showError(context, 'Please capture customer signature');
-      return;
-    }
-    final signatureImage = signaturePreview ?? await convertSignatureToImage(signaturePoints, width: 300, height: 80);
-    final pdfBytes = await generateTaskReportPDF(
-      context: context,
-      taskId: taskId,
-      dateTime: dateTime,
-      companyName: companyName,
-      phone: phone,
-      addressLine: addressLine,
-      addressCity: addressCity,
-      reportedBy: reportedBy,
-      problemDescription: problemDescription,
-      reportDescription: reportDescription,
-      materialsDelivered: materialsDelivered,
-      materialsReceived: materialsReceived,
-      beforePhotos: beforePhotos,
-      afterPhotos: afterPhotos,
-      customerName: customerName,
-      signaturePoints: signaturePoints,
-      signatureImage: signatureImage,
-      rating: rating,
-    );
-    final previewConfirm = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PdfPreviewScreen(pdfBytes: pdfBytes),
-      ),
-    );
-    if (previewConfirm != true) return;
-    _formKey.currentState!.save();
-    // Save the PDF to file for final submit
-    final output = await getTemporaryDirectory();
-    final file = File('${output.path}/TaskReport_${taskId}.pdf');
-    await file.writeAsBytes(pdfBytes);
-    String pdfPath = file.path;
-    final box = Hive.box<FormEntry>('forms');
-    if (formEntry == null) {
-      final id = const Uuid().v4();
-      formEntry = FormEntry(
-        id: id,
-        taskId: taskId,
-        dateTime: dateTime,
-        companyName: companyName,
-        phone: phone,
-        addressLine: addressLine,
-        addressCity: addressCity,
-        reportedBy: reportedBy,
-        problemDescription: problemDescription,
-        reportDescription: reportDescription,
-        materialsDelivered: materialsDelivered,
-        materialsReceived: materialsReceived,
-        beforePhotoPaths: beforePhotos.map((f) => f.path).toList(),
-        afterPhotoPaths: afterPhotos.map((f) => f.path).toList(),
-        customerName: customerName,
-        signatureImage: signatureImage,
-        rating: rating,
-        status: FormStatus.finalized,
-        formType: 1,
-        pdfPath: pdfPath,
-      );
-    } else {
-      formEntry!
-        ..taskId = taskId
-        ..dateTime = dateTime
-        ..companyName = companyName
-        ..phone = phone
-        ..addressLine = addressLine
-        ..addressCity = addressCity
-        ..reportedBy = reportedBy
-        ..problemDescription = problemDescription
-        ..reportDescription = reportDescription
-        ..materialsDelivered = materialsDelivered
-        ..materialsReceived = materialsReceived
-        ..beforePhotoPaths = beforePhotos.map((f) => f.path).toList()
-        ..afterPhotoPaths = afterPhotos.map((f) => f.path).toList()
-        ..customerName = customerName
-        ..signatureImage = signatureImage
-        ..rating = rating
-        ..status = FormStatus.finalized
-        ..pdfPath = pdfPath;
-    }
-    await box.put(formEntry!.id, formEntry!);
-    Navigator.of(context).pop();
   }
 
   Future<void> _pickImage(List<File> photoList) async {
@@ -504,14 +408,10 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   hint: 'LTS-',
                   controller: _taskIdController,
                   onSaved: (v) => taskId = v ?? '',
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Task ID is required';
-                    if (!v.startsWith('LTS-')) return 'Task ID must start with LTS-';
-                    return null;
-                  },
+                  validator: (v) => v == null || v.isEmpty ? 'Task ID is required' : null,
                   focusNode: _taskIdFocus,
                 ),
-                _FormLabel('Date-Time', required: true),
+                _FormLabel('Date-Time'),
                 GestureDetector(
                   onTap: () => _pickDateTime(context),
                   child: AbsorbPointer(
@@ -519,7 +419,6 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                       hint: 'dd-mm-yyyy  HH:MM AM/PM',
                       controller: _dateTimeController,
                       onSaved: (v) => dateTime = v ?? '',
-                      validator: (v) => (_dateTimeController.text.isEmpty) ? 'Date-Time is required' : null,
                       focusNode: _dateTimeFocus,
                     ),
                   ),
@@ -531,17 +430,11 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   validator: (v) => v == null || v.isEmpty ? 'Company/Contact name is required' : null,
                   focusNode: _companyNameFocus,
                 ),
-                _FormLabel('Phone', required: true),
+                _FormLabel('Phone'),
                 _FormTextField(
                   hint: '(+91) 9876543210',
                   controller: _phoneController,
                   onSaved: (v) => phone = v ?? '',
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Phone is required';
-                    final phoneReg = RegExp(r'^(\+\d{1,3}[- ]?)?\d{10,}$');
-                    if (!phoneReg.hasMatch(v)) return 'Enter a valid phone number';
-                    return null;
-                  },
                   focusNode: _phoneFocus,
                 ),
                 _FormLabel('Address'),
@@ -564,26 +457,24 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     ),
                   ],
                 ),
-                _FormLabel('Reported By', required: true),
+                _FormLabel('Reported By'),
                 _FormDropdown(
                   items: const ['Durai', 'Elango', 'Lenin', 'Mani', 'Mohan ID', 'Mohan', 'Nandhini ', 'Priya', 'Seeni', 'Other'],
                   value: reportedBy,
                   onChanged: (v) => setState(() => reportedBy = v ?? 'Durai'),
                 ),
-                _FormLabel('Problem Description', required: true),
+                _FormLabel('Problem Description'),
                 _FormTextField(
                   controller: _problemDescController,
                   maxLines: 4,
                   onSaved: (v) => problemDescription = v ?? '',
-                  validator: (v) => v == null || v.isEmpty ? 'Problem Description is required' : null,
                   focusNode: _problemDescFocus,
                 ),
-                _FormLabel('Report Description', required: true),
+                _FormLabel('Report Description'),
                 _FormTextField(
                   controller: _reportDescController,
                   maxLines: 4,
                   onSaved: (v) => reportDescription = v ?? '',
-                  validator: (v) => v == null || v.isEmpty ? 'Report Description is required' : null,
                   focusNode: _reportDescFocus,
                 ),
                 _FormLabel('Materials Delivered'),
@@ -617,7 +508,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   validator: (v) => v == null || v.isEmpty ? 'Customer Name is required' : null,
                   focusNode: _customerNameFocus,
                 ),
-                _FormLabel('Customer Signature (only Customers)', required: true),
+                _FormLabel('Customer Signature (only Customers)'),
                 GestureDetector(
                   onTap: _showSignatureDialog,
                   child: Container(
@@ -639,34 +530,18 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   onChanged: (v) => setState(() => rating = v),
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        onPressed: _saveForm,
-                        child: const Text('Save', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
-                      ),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7ED957),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7ED957),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        onPressed: _finalizeForm,
-                        child: const Text('Final Submit', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ],
+                    onPressed: _saveForm,
+                    child: const Text('Save', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                  ),
                 ),
                 const SizedBox(height: 32),
               ],
