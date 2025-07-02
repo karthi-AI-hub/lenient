@@ -7,9 +7,10 @@ import 'package:printing/printing.dart';
 import 'dart:ui' show Offset;
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
 
 /// Top‑level helper
-Future<void> generateTaskReportPDF({
+Future<String> generateTaskReportPDF({
   required BuildContext context,
   required String taskId,
   required String dateTime,
@@ -207,11 +208,18 @@ Future<void> generateTaskReportPDF({
     ),
   );
 
+  // Save PDF to file
+  final output = await getTemporaryDirectory();
+  final file = File('${output.path}/TaskReport_${taskId}.pdf');
+  await file.writeAsBytes(await pdf.save());
+
   // Preview / share / save
   await Printing.layoutPdf(
     onLayout: (PdfPageFormat format) async => pdf.save(),
     name: 'TaskReport_$taskId.pdf',
   );
+
+  return file.path;
 }
 
 /* -------------------- SMALL HELPERS -------------------- */

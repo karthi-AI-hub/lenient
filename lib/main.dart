@@ -5,8 +5,16 @@ import 'screens/forms_screen.dart';
 import 'screens/download_screen.dart';
 import 'widgets/lenient_app_bar.dart';
 import 'widgets/lenient_nav_bar.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/form_entry.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(FormStatusAdapter());
+  Hive.registerAdapter(FormEntryAdapter());
+  // await Hive.deleteBoxFromDisk('forms');
+  await Hive.openBox<FormEntry>('forms');
   runApp(const LenientTechnologiesApp());
 }
 
