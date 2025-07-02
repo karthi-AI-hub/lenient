@@ -11,6 +11,8 @@ import '../models/form_entry.dart';
 import '../utils/lenient_snackbar.dart';
 import '../utils/lenient_dialog.dart';
 import 'package:uuid/uuid.dart';
+import 'pdf_preview_screen.dart';
+import 'package:path_provider/path_provider.dart';
 
 class FormEntryScreen extends StatefulWidget {
   final String? formId;
@@ -220,47 +222,14 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       _focusFirstInvalidField();
       return;
     }
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text('Confirm Final Submit', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text(
-          "Are you sure you want to generate the PDF?\n\nYou won't be able to edit the form after this. Please review all details before proceeding.",
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.black,
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7ED957),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Yes, Generate PDF'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
     _formKey.currentState!.save();
-    if (signaturePoints.isEmpty) {
+    if ((signaturePoints.isEmpty) && (signaturePreview == null)) {
+      print('signaturePoints: $signaturePoints, signaturePreview: $signaturePreview');
       LenientSnackbar.showError(context, 'Please capture customer signature');
       return;
     }
     final signatureImage = signaturePreview ?? await convertSignatureToImage(signaturePoints, width: 300, height: 80);
-    String pdfPath = await generateTaskReportPDF(
+    final pdfBytes = await generateTaskReportPDF(
       context: context,
       taskId: taskId,
       dateTime: dateTime,
@@ -280,6 +249,19 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       signatureImage: signatureImage,
       rating: rating,
     );
+    final previewConfirm = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(pdfBytes: pdfBytes),
+      ),
+    );
+    if (previewConfirm != true) return;
+    _formKey.currentState!.save();
+    // Save the PDF to file for final submit
+    final output = await getTemporaryDirectory();
+    final file = File('${output.path}/TaskReport_${taskId}.pdf');
+    await file.writeAsBytes(pdfBytes);
+    String pdfPath = file.path;
     final box = Hive.box<FormEntry>('forms');
     if (formEntry == null) {
       final id = const Uuid().v4();

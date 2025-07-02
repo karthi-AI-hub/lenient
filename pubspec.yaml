@@ -83,8 +83,12 @@ flutter:
     - assets/form-icon.svg
     - assets/home-icon.svg
     - assets/logo.png
-    - assets/template.jpg
+    - assets/template_green.jpg
     - assets/fonts/Nunito-Regular.ttf
+    - assets/fonts/DejaVuSans.ttf
+    - assets/phone-icon.png
+    - assets/email-icon.png
+    - assets/address-icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
