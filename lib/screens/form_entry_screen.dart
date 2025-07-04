@@ -6,8 +6,8 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'dart:ui' show Offset;
 import 'dart:typed_data';
-import 'package:hive/hive.dart';
-import '../models/form_entry.dart';
+import '../models/form_model.dart';
+import '../services/supabase_service.dart';
 import '../utils/lenient_snackbar.dart';
 import '../utils/lenient_dialog.dart';
 import 'package:uuid/uuid.dart';
@@ -24,47 +24,31 @@ class FormEntryScreen extends StatefulWidget {
 
 class _FormEntryScreenState extends State<FormEntryScreen> {
   final _formKey = GlobalKey<FormState>();
-  String taskId = '';
-  String dateTime = '';
-  String companyName = '';
-  String phone = '';
-  String addressLine = '';
-  String addressCity = '';
+  final TextEditingController taskIdController = TextEditingController();
+  final TextEditingController companyNameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController addressLineController = TextEditingController();
+  final TextEditingController addressCityController = TextEditingController();
+  final TextEditingController problemDescriptionController = TextEditingController();
+  final TextEditingController reportDescriptionController = TextEditingController();
+  final TextEditingController materialsDeliveredController = TextEditingController();
+  final TextEditingController materialsReceivedController = TextEditingController();
+  final TextEditingController customerNameController = TextEditingController();
   String reportedBy = 'Durai';
-  String problemDescription = '';
-  String reportDescription = '';
-  String materialsDelivered = '';
-  String materialsReceived = '';
   List<File> beforePhotos = [];
+  List<String> beforePhotoUrls = [];
   List<File> afterPhotos = [];
-  String customerName = '';
-  String customerSignature = '';
+  List<String> afterPhotoUrls = [];
   int rating = 4;
-  List<Offset?> signaturePoints = [];
-  final _taskIdFocus = FocusNode();
-  final _dateTimeFocus = FocusNode();
-  final _companyNameFocus = FocusNode();
-  final _phoneFocus = FocusNode();
-  final _problemDescFocus = FocusNode();
-  final _reportDescFocus = FocusNode();
-  final _customerNameFocus = FocusNode();
-  final _signatureBoxKey = GlobalKey();
-  bool _isSigning = false;
-  final ScrollController _scrollController = ScrollController();
-  Uint8List? signaturePreview;
-  final TextEditingController _dateTimeController = TextEditingController();
-  FormEntry? formEntry;
+  String? signatureUrl;
   bool _loading = true;
-  final TextEditingController _taskIdController = TextEditingController();
-  final TextEditingController _companyNameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _addressLineController = TextEditingController();
-  final TextEditingController _addressCityController = TextEditingController();
-  final TextEditingController _problemDescController = TextEditingController();
-  final TextEditingController _reportDescController = TextEditingController();
-  final TextEditingController _materialsDeliveredController = TextEditingController();
-  final TextEditingController _materialsReceivedController = TextEditingController();
-  final TextEditingController _customerNameController = TextEditingController();
+  bool _saving = false;
+  bool _uploadingSignature = false;
+  Uint8List? signaturePreview;
+  List<Offset?> signaturePoints = [];
+  FormModel? formEntry;
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
 
   @override
   void initState() {
@@ -77,184 +61,153 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (dateTime.isEmpty) {
-      final now = DateTime.now();
-      final time = TimeOfDay.fromDateTime(now);
-      dateTime = '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year} '
-          '${time.format(context)}';
-      _dateTimeController.text = dateTime;
-    } else {
-      _dateTimeController.text = dateTime;
-    }
+  void dispose() {
+    taskIdController.dispose();
+    companyNameController.dispose();
+    phoneController.dispose();
+    addressLineController.dispose();
+    addressCityController.dispose();
+    problemDescriptionController.dispose();
+    reportDescriptionController.dispose();
+    materialsDeliveredController.dispose();
+    materialsReceivedController.dispose();
+    customerNameController.dispose();
+    super.dispose();
   }
 
+  /// Loads the form from Supabase if editing, otherwise prepares for new entry.
   Future<void> _loadForm() async {
-    final box = Hive.box<FormEntry>('forms');
-    formEntry = box.get(widget.formId);
-    if (formEntry != null) {
-      debugPrint('Loaded form: \n$formEntry');
-      setState(() {
-        _loading = false;
-        taskId = formEntry!.taskId;
-        _taskIdController.text = formEntry!.taskId;
-        dateTime = formEntry!.dateTime;
-        companyName = formEntry!.companyName;
-        _companyNameController.text = formEntry!.companyName;
-        phone = formEntry!.phone;
-        _phoneController.text = formEntry!.phone;
-        addressLine = formEntry!.addressLine;
-        _addressLineController.text = formEntry!.addressLine;
-        addressCity = formEntry!.addressCity;
-        _addressCityController.text = formEntry!.addressCity;
-        reportedBy = formEntry!.reportedBy;
-        problemDescription = formEntry!.problemDescription;
-        _problemDescController.text = formEntry!.problemDescription;
-        reportDescription = formEntry!.reportDescription;
-        _reportDescController.text = formEntry!.reportDescription;
-        materialsDelivered = formEntry!.materialsDelivered;
-        _materialsDeliveredController.text = formEntry!.materialsDelivered;
-        materialsReceived = formEntry!.materialsReceived;
-        _materialsReceivedController.text = formEntry!.materialsReceived;
-        beforePhotos = formEntry!.beforePhotoPaths.map((p) => File(p)).toList();
-        afterPhotos = formEntry!.afterPhotoPaths.map((p) => File(p)).toList();
-        customerName = formEntry!.customerName;
-        _customerNameController.text = formEntry!.customerName;
-        signaturePreview = formEntry!.signatureImage;
-        rating = formEntry!.rating;
-      });
-    } else {
-      setState(() {
-        _loading = false;
-      });
-    }
-  }
-
-  void _saveForm() async {
-    bool valid = _formKey.currentState!.validate();
-    if (!valid) {
-      _focusFirstInvalidField();
-      LenientSnackbar.showError(context, 'Please fill all required fields.');
-      return;
-    }
-    _formKey.currentState!.save();
-    final box = Hive.box<FormEntry>('forms');
-    if (formEntry == null) {
-      final id = const Uuid().v4();
-      formEntry = FormEntry(
-        id: id,
-        taskId: taskId,
-        dateTime: dateTime,
-        companyName: companyName,
-        phone: phone,
-        addressLine: addressLine,
-        addressCity: addressCity,
-        reportedBy: reportedBy,
-        problemDescription: problemDescription,
-        reportDescription: reportDescription,
-        materialsDelivered: materialsDelivered,
-        materialsReceived: materialsReceived,
-        beforePhotoPaths: beforePhotos.map((f) => f.path).toList(),
-        afterPhotoPaths: afterPhotos.map((f) => f.path).toList(),
-        customerName: customerName,
-        signatureImage: signaturePreview,
-        rating: rating,
-        status: FormStatus.saved,
-        formType: 1,
-      );
-    } else {
-      formEntry!
-        ..taskId = taskId
-        ..dateTime = dateTime
-        ..companyName = companyName
-        ..phone = phone
-        ..addressLine = addressLine
-        ..addressCity = addressCity
-        ..reportedBy = reportedBy
-        ..problemDescription = problemDescription
-        ..reportDescription = reportDescription
-        ..materialsDelivered = materialsDelivered
-        ..materialsReceived = materialsReceived
-        ..beforePhotoPaths = beforePhotos.map((f) => f.path).toList()
-        ..afterPhotoPaths = afterPhotos.map((f) => f.path).toList()
-        ..customerName = customerName
-        ..signatureImage = signaturePreview
-        ..rating = rating
-        ..status = FormStatus.saved;
-    }
-    debugPrint('Saving form: \n$formEntry');
-    await box.put(formEntry!.id, formEntry!);
-
-    FocusScope.of(context).unfocus();
-    _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-
-    LenientSnackbar.showSuccess(context, 'Form saved.', milliseconds: 1200);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (mounted) Navigator.of(context).pop();
-  }
-
-  void _focusFirstInvalidField() {
-    if (taskId.isEmpty || !taskId.startsWith('LTS-')) {
-      FocusScope.of(context).requestFocus(_taskIdFocus);
-    } else if (dateTime.isEmpty) {
-      FocusScope.of(context).requestFocus(_dateTimeFocus);
-    } else if (companyName.isEmpty) {
-      FocusScope.of(context).requestFocus(_companyNameFocus);
-    } else if (phone.isEmpty) {
-      FocusScope.of(context).requestFocus(_phoneFocus);
-    } else if (problemDescription.isEmpty) {
-      FocusScope.of(context).requestFocus(_problemDescFocus);
-    } else if (reportDescription.isEmpty) {
-      FocusScope.of(context).requestFocus(_reportDescFocus);
-    } else if (customerName.isEmpty) {
-      FocusScope.of(context).requestFocus(_customerNameFocus);
-    }
-  }
-
-  Future<void> _pickImage(List<File> photoList) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        photoList.add(File(picked.path));
-      });
-    }
-  }
-
-  Future<void> _pickDateTime(BuildContext context) async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (date != null) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (time != null) {
-        final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    try {
+      formEntry = await SupabaseService.getForm(widget.formId!);
+      if (formEntry != null) {
         setState(() {
-          dateTime = '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} '
-              '${time.format(context)}';
-          _dateTimeController.text = dateTime;
+          _loading = false;
+          taskIdController.text = formEntry!.taskId;
+          companyNameController.text = formEntry!.companyName ?? '';
+          phoneController.text = formEntry!.phone ?? '';
+          addressLineController.text = formEntry!.addressLine ?? '';
+          addressCityController.text = formEntry!.addressCity ?? '';
+          reportedBy = formEntry!.reportedBy ?? '';
+          problemDescriptionController.text = formEntry!.problemDescription ?? '';
+          reportDescriptionController.text = formEntry!.reportDescription ?? '';
+          materialsDeliveredController.text = formEntry!.materialsDelivered ?? '';
+          materialsReceivedController.text = formEntry!.materialsReceived ?? '';
+          customerNameController.text = formEntry!.customeName ?? '';
+          beforePhotos = [];
+          beforePhotoUrls = (formEntry!.beforePhotoUrls ?? []);
+          afterPhotos = [];
+          afterPhotoUrls = (formEntry!.afterPhotoUrls ?? []);
+          rating = formEntry!.rating ?? 0;
+          signatureUrl = formEntry!.signatureUrl;
+          createdAt = formEntry!.createdAt;
+          updatedAt = formEntry!.updatedAt;
+        });
+      } else {
+        setState(() { _loading = false; });
+        LenientSnackbar.showWarning(context, 'Form not found.');
+      }
+    } catch (e) {
+      setState(() { _loading = false; });
+      LenientSnackbar.showError(context, getFriendlyErrorMessage(e));
+    }
+  }
+
+  /// Saves the form to Supabase. Shows loading indicator and error feedback.
+  void _saveForm() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() { _saving = true; });
+    await Future.delayed(const Duration(milliseconds: 100)); // Let UI update
+    try {
+      // Track removed images
+      final removedBeforeUrls = <String>[];
+      final removedAfterUrls = <String>[];
+      if (formEntry != null) {
+        for (final url in formEntry!.beforePhotoUrls ?? []) {
+          if (!beforePhotoUrls.contains(url)) removedBeforeUrls.add(url);
+        }
+        for (final url in formEntry!.afterPhotoUrls ?? []) {
+          if (!afterPhotoUrls.contains(url)) removedAfterUrls.add(url);
+        }
+      }
+      debugPrint('Removed before image URLs: $removedBeforeUrls');
+      debugPrint('Removed after image URLs: $removedAfterUrls');
+      final form = FormModel(
+        id: formEntry?.id ?? const Uuid().v4(),
+        taskId: taskIdController.text,
+        formType: 'Form1',
+        companyName: companyNameController.text,
+        phone: phoneController.text,
+        addressLine: addressLineController.text,
+        addressCity: addressCityController.text,
+        reportedBy: reportedBy,
+        problemDescription: problemDescriptionController.text,
+        reportDescription: reportDescriptionController.text,
+        materialsDelivered: materialsDeliveredController.text,
+        materialsReceived: materialsReceivedController.text,
+        customeName: customerNameController.text,
+        rating: rating,
+        signatureUrl: formEntry?.signatureUrl,
+        beforePhotoUrls: beforePhotoUrls,
+        afterPhotoUrls: afterPhotoUrls,
+        createdAt: createdAt,
+        updatedAt: DateTime.now(),
+      );
+      debugPrint('Calling SupabaseService.uploadForm with isEdit: ${formEntry != null}');
+      final newForm = await SupabaseService.uploadForm(
+        form: form,
+        signatureBytes: signaturePreview,
+        before: beforePhotos,
+        after: afterPhotos,
+        isEdit: formEntry != null,
+        oldBeforeUrls: removedBeforeUrls,
+        oldAfterUrls: removedAfterUrls,
+        oldSignatureUrl: formEntry?.signatureUrl,
+      );
+      debugPrint('Form upload complete. New form: ${newForm.toMap()}');
+      setState(() {
+        formEntry = newForm;
+        beforePhotos.clear();
+        afterPhotos.clear();
+      });
+      // Clean up cache files
+      for (final file in beforePhotos) {
+        try {
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+      }
+      for (final file in afterPhotos) {
+        try {
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+      }
+      if (mounted) {
+        LenientSnackbar.showSuccess(context, 'Form saved successfully');
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      debugPrint('Error in _saveForm: $e');
+      LenientSnackbar.showError(context, getFriendlyErrorMessage(e));
+    } finally {
+      if (mounted) setState(() { _saving = false; });
+    }
+  }
+
+  /// Picks an image from the gallery and adds it to the given photo list.
+  Future<void> _pickImage(List<File> photoList) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked != null) {
+        setState(() {
+          photoList.add(File(picked.path));
         });
       }
+    } catch (e) {
+      LenientSnackbar.showError(context, getFriendlyErrorMessage(e));
     }
   }
 
-  void _clearSignature() {
-    setState(() {
-      signaturePoints.clear();
-    });
-  }
-
+  /// Shows a dialog for the user to draw and upload a signature.
   Future<void> _showSignatureDialog() async {
     List<Offset?> tempPoints = List.from(signaturePoints);
     Uint8List? tempImage;
@@ -297,6 +250,11 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      if (_uploadingSignature)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: CircularProgressIndicator(),
+                        ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -325,13 +283,19 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                               foregroundColor: Colors.white,
                               textStyle: const TextStyle(fontWeight: FontWeight.w600),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                signaturePoints = List.from(tempPoints);
-                                signaturePreview = tempImage;
-                              });
-                              Navigator.of(context).pop();
-                            },
+                            onPressed: _uploadingSignature
+                                ? null
+                                : () async {
+                                    if (tempPoints.isEmpty) {
+                                      LenientSnackbar.showWarning(context, 'Please provide a signature.');
+                                      return;
+                                    }
+                                    setState(() {
+                                      signaturePreview = tempImage;
+                                      signaturePoints = List.from(tempPoints);
+                                    });
+                                    Navigator.of(context).pop();
+                                  },
                             child: const Text('Capture'),
                           ),
                           const SizedBox(width: 8),
@@ -395,8 +359,6 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
           ),
         ),
         body: SingleChildScrollView(
-          controller: _scrollController,
-          physics: _isSigning ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Form(
             key: _formKey,
@@ -406,36 +368,18 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 _FormLabel('Task ID', required: true),
                 _FormTextField(
                   hint: 'LTS-',
-                  controller: _taskIdController,
-                  onSaved: (v) => taskId = v ?? '',
+                  controller: taskIdController,
                   validator: (v) => v == null || v.isEmpty ? 'Task ID is required' : null,
-                  focusNode: _taskIdFocus,
-                ),
-                _FormLabel('Date-Time'),
-                GestureDetector(
-                  onTap: () => _pickDateTime(context),
-                  child: AbsorbPointer(
-                    child: _FormTextField(
-                      hint: 'dd-mm-yyyy  HH:MM AM/PM',
-                      controller: _dateTimeController,
-                      onSaved: (v) => dateTime = v ?? '',
-                      focusNode: _dateTimeFocus,
-                    ),
-                  ),
                 ),
                 _FormLabel('Company / Contact name', required: true),
                 _FormTextField(
-                  controller: _companyNameController,
-                  onSaved: (v) => companyName = v ?? '',
+                  controller: companyNameController,
                   validator: (v) => v == null || v.isEmpty ? 'Company/Contact name is required' : null,
-                  focusNode: _companyNameFocus,
                 ),
                 _FormLabel('Phone'),
                 _FormTextField(
                   hint: '(+91) 9876543210',
-                  controller: _phoneController,
-                  onSaved: (v) => phone = v ?? '',
-                  focusNode: _phoneFocus,
+                  controller: phoneController,
                 ),
                 _FormLabel('Address'),
                 Row(
@@ -443,16 +387,14 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     Expanded(
                       child: _FormTextField(
                         hint: 'Line',
-                        controller: _addressLineController,
-                        onSaved: (v) => addressLine = v ?? '',
+                        controller: addressLineController,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _FormTextField(
                         hint: 'City',
-                        controller: _addressCityController,
-                        onSaved: (v) => addressCity = v ?? '',
+                        controller: addressCityController,
                       ),
                     ),
                   ],
@@ -465,48 +407,43 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 ),
                 _FormLabel('Problem Description'),
                 _FormTextField(
-                  controller: _problemDescController,
+                  controller: problemDescriptionController,
                   maxLines: 4,
-                  onSaved: (v) => problemDescription = v ?? '',
-                  focusNode: _problemDescFocus,
                 ),
                 _FormLabel('Report Description'),
                 _FormTextField(
-                  controller: _reportDescController,
+                  controller: reportDescriptionController,
                   maxLines: 4,
-                  onSaved: (v) => reportDescription = v ?? '',
-                  focusNode: _reportDescFocus,
                 ),
                 _FormLabel('Materials Delivered'),
                 _FormTextField(
-                  controller: _materialsDeliveredController,
+                  controller: materialsDeliveredController,
                   maxLines: 3,
-                  onSaved: (v) => materialsDelivered = v ?? '',
                 ),
                 _FormLabel('Materials Received'),
                 _FormTextField(
-                  controller: _materialsReceivedController,
+                  controller: materialsReceivedController,
                   maxLines: 3,
-                  onSaved: (v) => materialsReceived = v ?? '',
+                ),
+                _FormLabel('Customer Name'),
+                _FormTextField(
+                  controller: customerNameController,
                 ),
                 _FormLabel('Before (Max 3 Photos)'),
                 _PhotoGrid(
-                  photos: beforePhotos,
+                  files: beforePhotos,
+                  urls: beforePhotoUrls,
                   onAdd: () => _pickImage(beforePhotos),
-                  onRemove: (i) => setState(() => beforePhotos.removeAt(i)),
+                  onRemoveFile: (i) => setState(() => beforePhotos.removeAt(i)),
+                  onRemoveUrl: (i) => setState(() => beforePhotoUrls.removeAt(i)),
                 ),
                 _FormLabel('After (Max 3 Photos)'),
                 _PhotoGrid(
-                  photos: afterPhotos,
+                  files: afterPhotos,
+                  urls: afterPhotoUrls,
                   onAdd: () => _pickImage(afterPhotos),
-                  onRemove: (i) => setState(() => afterPhotos.removeAt(i)),
-                ),
-                _FormLabel('Customer Name / Designation', required: true),
-                _FormTextField(
-                  controller: _customerNameController,
-                  onSaved: (v) => customerName = v ?? '',
-                  validator: (v) => v == null || v.isEmpty ? 'Customer Name is required' : null,
-                  focusNode: _customerNameFocus,
+                  onRemoveFile: (i) => setState(() => afterPhotos.removeAt(i)),
+                  onRemoveUrl: (i) => setState(() => afterPhotoUrls.removeAt(i)),
                 ),
                 _FormLabel('Customer Signature (only Customers)'),
                 GestureDetector(
@@ -521,9 +458,16 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     alignment: Alignment.center,
                     child: signaturePreview != null
                         ? Image.memory(signaturePreview!, height: 64)
-                        : const Text('Tap to sign', style: TextStyle(color: Colors.grey)),
+                        : (signatureUrl != null
+                            ? Image.network(signatureUrl!, height: 64)
+                            : const Text('Tap to sign', style: TextStyle(color: Colors.grey))),
                   ),
                 ),
+                if (_saving)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
                 _FormLabel('Customer Rating (only Customers)'),
                 _StarRating(
                   rating: rating,
@@ -570,41 +514,54 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
 
   bool _hasUnsavedChanges() {
     if (formEntry != null) {
-      return _taskIdController.text != formEntry!.taskId ||
-          _dateTimeController.text != formEntry!.dateTime ||
-          _companyNameController.text != formEntry!.companyName ||
-          _phoneController.text != formEntry!.phone ||
-          _addressLineController.text != formEntry!.addressLine ||
-          _addressCityController.text != formEntry!.addressCity ||
+      return taskIdController.text != formEntry!.taskId ||
+          companyNameController.text != formEntry!.companyName ||
+          phoneController.text != formEntry!.phone ||
+          addressLineController.text != formEntry!.addressLine ||
+          addressCityController.text != formEntry!.addressCity ||
           reportedBy != formEntry!.reportedBy ||
-          _problemDescController.text != formEntry!.problemDescription ||
-          _reportDescController.text != formEntry!.reportDescription ||
-          _materialsDeliveredController.text != formEntry!.materialsDelivered ||
-          _materialsReceivedController.text != formEntry!.materialsReceived ||
-          beforePhotos.map((f) => f.path).toList().toString() != formEntry!.beforePhotoPaths.toString() ||
-          afterPhotos.map((f) => f.path).toList().toString() != formEntry!.afterPhotoPaths.toString() ||
-          _customerNameController.text != formEntry!.customerName ||
-          rating != formEntry!.rating ||
-          signaturePreview != formEntry!.signatureImage;
+          problemDescriptionController.text != formEntry!.problemDescription ||
+          reportDescriptionController.text != formEntry!.reportDescription ||
+          materialsDeliveredController.text != formEntry!.materialsDelivered ||
+          materialsReceivedController.text != formEntry!.materialsReceived ||
+          customerNameController.text != formEntry!.customeName ||
+          beforePhotoUrls.toString() != formEntry!.beforePhotoUrls.toString() ||
+          afterPhotoUrls.toString() != formEntry!.afterPhotoUrls.toString() ||
+          signatureUrl != formEntry!.signatureUrl ||
+          rating != formEntry!.rating;
     } else {
-      return _taskIdController.text.isNotEmpty ||
-          _companyNameController.text.isNotEmpty ||
-          _phoneController.text.isNotEmpty ||
-          _addressLineController.text.isNotEmpty ||
-          _addressCityController.text.isNotEmpty ||
+      return taskIdController.text.isNotEmpty ||
+          companyNameController.text.isNotEmpty ||
+          phoneController.text.isNotEmpty ||
+          addressLineController.text.isNotEmpty ||
+          addressCityController.text.isNotEmpty ||
           reportedBy != 'Durai' ||
-          _problemDescController.text.isNotEmpty ||
-          _reportDescController.text.isNotEmpty ||
-          _materialsDeliveredController.text.isNotEmpty ||
-          _materialsReceivedController.text.isNotEmpty ||
-          beforePhotos.isNotEmpty ||
-          afterPhotos.isNotEmpty ||
-          _customerNameController.text.isNotEmpty ||
-          rating != 4 ||
-          signaturePreview != null;
+          problemDescriptionController.text.isNotEmpty ||
+          reportDescriptionController.text.isNotEmpty ||
+          materialsDeliveredController.text.isNotEmpty ||
+          materialsReceivedController.text.isNotEmpty ||
+          customerNameController.text.isNotEmpty ||
+          beforePhotoUrls.isNotEmpty ||
+          afterPhotoUrls.isNotEmpty ||
+          signatureUrl != null ||
+          rating != 4;
     }
   }
+
+  String getFriendlyErrorMessage(dynamic error) {
+    final msg = error.toString();
+    if (msg.contains('duplicate key value') && msg.contains('forms_task_id_key')) {
+      return 'Task ID already exists. Try another Task ID';
+    } else if (msg.contains('row-level security policy') || msg.contains('Unauthorized')) {
+      return 'Not authorized to perform this action.';
+    } else if (msg.contains('StorageException')) {
+      return 'Upload failed. Try again';
+    }
+    return 'Something went wrong.';
+  }
 }
+
+// --- Helper Widgets ---
 
 class _FormLabel extends StatelessWidget {
   final String label;
@@ -635,9 +592,8 @@ class _FormTextField extends StatelessWidget {
   final Function(String?)? onSaved;
   final String? Function(String?)? validator;
   final String? initialValue;
-  final FocusNode? focusNode;
   final TextEditingController? controller;
-  const _FormTextField({this.hint, this.maxLines = 1, this.onSaved, this.validator, this.initialValue, this.focusNode, this.controller});
+  const _FormTextField({this.hint, this.maxLines = 1, this.onSaved, this.validator, this.initialValue, this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -664,7 +620,6 @@ class _FormTextField extends StatelessWidget {
         validator: validator,
         initialValue: controller == null ? initialValue : null,
         controller: controller,
-        focusNode: focusNode,
       ),
     );
   }
@@ -683,6 +638,7 @@ class _FormDropdown extends StatelessWidget {
       child: DropdownButtonFormField<String>(
         items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontFamily: 'Poppins')))).toList(),
         onChanged: onChanged,
+        value: value,
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white,
@@ -702,13 +658,18 @@ class _FormDropdown extends StatelessWidget {
 }
 
 class _PhotoGrid extends StatelessWidget {
-  final List<File> photos;
+  final List<File> files;
+  final List<String> urls;
   final VoidCallback onAdd;
-  final Function(int) onRemove;
-  const _PhotoGrid({required this.photos, required this.onAdd, required this.onRemove});
+  final Function(int) onRemoveFile;
+  final Function(int) onRemoveUrl;
+  const _PhotoGrid({required this.files, required this.urls, required this.onAdd, required this.onRemoveFile, required this.onRemoveUrl});
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('PhotoGrid: urls=$urls, files=${files.map((f) => f.path).toList()}');
+    final total = files.length + urls.length;
+    final canAdd = total < 3;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(8),
@@ -720,7 +681,8 @@ class _PhotoGrid extends StatelessWidget {
       child: Row(
         children: [
           ...List.generate(3, (i) {
-            if (i < photos.length) {
+            if (i < urls.length) {
+              debugPrint('PhotoGrid: showing network image: ${urls[i]}');
               return Stack(
                 children: [
                   Container(
@@ -731,7 +693,7 @@ class _PhotoGrid extends StatelessWidget {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                       image: DecorationImage(
-                        image: FileImage(photos[i]),
+                        image: NetworkImage(urls[i]),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -740,7 +702,7 @@ class _PhotoGrid extends StatelessWidget {
                     top: 0,
                     right: 0,
                     child: GestureDetector(
-                      onTap: () => onRemove(i),
+                      onTap: () => onRemoveUrl(i),
                       child: Container(
                         decoration: const BoxDecoration(
                           color: Colors.red,
@@ -753,7 +715,42 @@ class _PhotoGrid extends StatelessWidget {
                   ),
                 ],
               );
-            } else if (i == photos.length && photos.length < 3) {
+            } else if (i < urls.length + files.length) {
+              final fileIdx = i - urls.length;
+              debugPrint('PhotoGrid: showing file image: ${files[fileIdx].path}');
+              return Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: FileImage(files[fileIdx]),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: () => onRemoveFile(fileIdx),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(2),
+                        child: const Icon(Icons.close, size: 16, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            } else if (i == total && canAdd) {
               return GestureDetector(
                 onTap: onAdd,
                 child: Container(
@@ -773,12 +770,21 @@ class _PhotoGrid extends StatelessWidget {
           }),
           const Spacer(),
           GestureDetector(
-            onTap: onAdd,
+            onTap: canAdd
+                ? onAdd
+                : () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Maximum 3 images allowed.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
             child: Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
-                color: Colors.black,
+              decoration: BoxDecoration(
+                color: canAdd ? Colors.black : Colors.grey,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.add, color: Colors.white),

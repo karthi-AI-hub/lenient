@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'form_entry_screen.dart';
-import 'package:hive/hive.dart';
-import '../models/form_entry.dart';
 import 'package:uuid/uuid.dart';
 import '../utils/lenient_snackbar.dart';
+import '../utils/lenient_refresh_indicator.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -18,24 +17,31 @@ class HomeScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 32),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              children: [
-                _FormCard(title: 'Form 1', onTap: () async {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => FormEntryScreen()),
-                  );
-                }),
-                const SizedBox(height: 16),
-                _FormCard(title: 'Form 2', onTap: () async {
-                  LenientSnackbar.showWarning(context, 'Form 2 is not implemented yet');
-                }),
-                const SizedBox(height: 16),
-                _FormCard(title: 'Form 3', onTap: () async {
-                  LenientSnackbar.showWarning(context, 'Form 3 is not implemented yet');
-                }),
-              ],
+            child: LenientRefreshIndicator(
+              onRefresh: () async {
+                // TODO: Add logic to refresh home screen data from Supabase if needed.
+                LenientSnackbar.showSuccess(context, 'Data refreshed');
+              },
+              successMessage: null,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                children: [
+                  _FormCard(title: 'Form 1', onTap: () async {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => FormEntryScreen()),
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                  _FormCard(title: 'Form 2', onTap: () async {
+                    LenientSnackbar.showWarning(context, 'Form 2 is not implemented yet');
+                  }),
+                  const SizedBox(height: 16),
+                  _FormCard(title: 'Form 3', onTap: () async {
+                    LenientSnackbar.showWarning(context, 'Form 3 is not implemented yet');
+                  }),
+                ],
+              ),
             ),
           ),
         ],

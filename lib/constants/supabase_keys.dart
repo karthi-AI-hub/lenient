@@ -1,0 +1,2 @@
+const supabaseUrl = 'https://uztajdxuveadtuwwazti.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6dGFqZHh1dmVhZHR1d3dhenRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1NDk5MDUsImV4cCI6MjA2NzEyNTkwNX0.q1WbxHXM4a8no49tZ2kHxsthvwF4ylguSCujKHgFbZo'; 

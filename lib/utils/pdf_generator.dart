@@ -9,6 +9,54 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'dart:ui' as ui;
 import 'dart:ui' show Offset;
+import 'package:http/http.dart' as http;
+
+Future<Uint8List> getImageBytes(String path) async {
+  if (path.startsWith('http')) {
+    final response = await http.get(Uri.parse(path));
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      throw Exception('Failed to load image from $path');
+    }
+  } else {
+    return await File(path).readAsBytes();
+  }
+}
+
+Future<pw.ImageProvider?> fileImage(String? path) async {
+  if (path == null) return null;
+  try {
+    final bytes = await getImageBytes(path);
+    return pw.MemoryImage(bytes);
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<pw.Widget> buildPhotoRow(List<String> photoPaths) async {
+  final imgs = await Future.wait(photoPaths.take(3).map((p) => fileImage(p)));
+  return pw.Row(
+    mainAxisAlignment: pw.MainAxisAlignment.start,
+    children: List.generate(3, (i) {
+      final img = (i < imgs.length) ? imgs[i] : null;
+      return pw.Container(
+        margin: const pw.EdgeInsets.only(right: 8),
+        width: 100,
+        height: 80,
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey300),
+        ),
+        child: img != null
+            ? pw.ClipRRect(child: pw.Image(img, fit: pw.BoxFit.cover))
+            : pw.Center(
+                child: pw.Text('+',
+                    style: pw.TextStyle(
+                        fontSize: 24, color: PdfColors.grey400))),
+      );
+    }),
+  );
+}
 
 Future<Uint8List> generateTaskReportPDF({
   required BuildContext context,
@@ -23,8 +71,8 @@ Future<Uint8List> generateTaskReportPDF({
   required String reportDescription,
   required String materialsDelivered,
   required String materialsReceived,
-  required List<File> beforePhotos,
-  required List<File> afterPhotos,
+  required List<String> beforePhotoUrls,
+  required List<String> afterPhotoUrls,
   required String customerName,
   required List<Offset?> signaturePoints,
   required Uint8List signatureImage,
@@ -52,33 +100,8 @@ Future<Uint8List> generateTaskReportPDF({
   final addressIconBytes = await rootBundle.load('assets/address-icon.png');
   final addressIcon = pw.MemoryImage(addressIconBytes.buffer.asUint8List());
 
-  pw.ImageProvider? fileImage(File? f) =>
-      (f != null) ? pw.MemoryImage(f.readAsBytesSync()) : null;
-
-
-
-  pw.Widget buildPhotoRow(List<File> photos) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.start,
-      children: List.generate(3, (i) {
-        final img = (i < photos.length) ? fileImage(photos[i]) : null;
-        return pw.Container(
-          margin: const pw.EdgeInsets.only(right: 8),
-          width: 100,
-          height: 80,
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey300),
-          ),
-          child: img != null
-              ? pw.ClipRRect(child: pw.Image(img, fit: pw.BoxFit.cover))
-              : pw.Center(
-                  child: pw.Text('+',
-                      style: pw.TextStyle(
-                          fontSize: 24, color: PdfColors.grey400))),
-        );
-      }),
-    );
-  }
+  final beforePhotoRow = await buildPhotoRow(beforePhotoUrls);
+  final afterPhotoRow = await buildPhotoRow(afterPhotoUrls);
 
   pdf.addPage(pw.Page(
     pageFormat: PdfPageFormat.a4,
@@ -248,7 +271,7 @@ Future<Uint8List> generateTaskReportPDF({
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.symmetric(horizontal: 12),
-            child: buildPhotoRow(beforePhotos),
+            child: beforePhotoRow,
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -256,7 +279,7 @@ Future<Uint8List> generateTaskReportPDF({
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.symmetric(horizontal: 12),
-            child: buildPhotoRow(afterPhotos),
+            child: afterPhotoRow,
           ),
           // Terms and Signature
           pw.Spacer(),

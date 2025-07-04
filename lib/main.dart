@@ -4,16 +4,18 @@ import 'screens/home_screen.dart';
 import 'screens/forms_screen.dart';
 import 'widgets/lenient_app_bar.dart';
 import 'widgets/lenient_nav_bar.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'models/form_entry.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'constants/supabase_keys.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  Hive.registerAdapter(FormStatusAdapter());
-  Hive.registerAdapter(FormEntryAdapter());
-  // await Hive.deleteBoxFromDisk('forms');
-  await Hive.openBox<FormEntry>('forms');
+  await clearAppCache();
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+  );
   runApp(const LenientTechnologiesApp());
 }
 
@@ -36,6 +38,17 @@ class MainScaffold extends StatefulWidget {
 
   @override
   State<MainScaffold> createState() => _MainScaffoldState();
+}
+
+Future<void> clearAppCache() async {
+  try {
+    final cacheDir = await getTemporaryDirectory();
+    if (cacheDir.existsSync()) {
+      cacheDir.deleteSync(recursive: true);
+    }
+  } catch (e) {
+    debugPrint('Failed to clear cache: $e');
+  }
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
