@@ -136,7 +136,7 @@ class FormModel {
   }
 
   static FormModel empty() {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     return FormModel(
       id: const Uuid().v4(),
       taskId: '',

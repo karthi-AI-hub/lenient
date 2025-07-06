@@ -46,6 +46,8 @@ class _FormsScreenState extends State<FormsScreen> {
   String _search = '';
   final TextEditingController _searchController = TextEditingController();
   int _refreshKey = 0;
+  int _selectedTabIndex = 0;
+  final List<String> _tabTypes = ['Form1', 'Form2', 'Form3'];
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +55,68 @@ class _FormsScreenState extends State<FormsScreen> {
       color: const Color(0xFFF7F9FB),
       child: Column(
         children: [
-          const SizedBox(height: 24),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE0E0E0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: List.generate(3, (i) => Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedTabIndex = i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      decoration: BoxDecoration(
+                        color: _selectedTabIndex == i ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(i == 0 ? 12 : 0),
+                          bottomLeft: Radius.circular(i == 0 ? 12 : 0),
+                          topRight: Radius.circular(i == 2 ? 12 : 0),
+                          bottomRight: Radius.circular(i == 2 ? 12 : 0),
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Form ${i + 1}',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: _selectedTabIndex == i ? FontWeight.w700 : FontWeight.w500,
+                              fontSize: 16,
+                              color: _selectedTabIndex == i ? const Color(0xFF22B14C) : Colors.black,
+                            ),
+                          ),
+                          if (_selectedTabIndex == i)
+                            Container(
+                              margin: const EdgeInsets.only(top: 6),
+                              height: 3,
+                              width: 36,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF22B14C),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 20, left: 24, right: 24),
             child: Material(
               elevation: 1.5,
               borderRadius: BorderRadius.circular(12),
@@ -128,20 +189,33 @@ class _FormsScreenState extends State<FormsScreen> {
                   );
                 } else {
                   final allForms = snapshot.data!;
-                  final filtered = _search.isEmpty
-                      ? allForms
-                      : allForms.where((f) {
-                          final q = _search.toLowerCase();
-                          return f.taskId.toLowerCase().contains(q) ||
-                            (f.companyName?.toLowerCase().contains(q) ?? false) ||
-                            (f.phone?.toLowerCase().contains(q) ?? false) ||
-                            (f.problemDescription?.toLowerCase().contains(q) ?? false) ||
-                            (f.reportDescription?.toLowerCase().contains(q) ?? false) ||
-                            (f.materialsDelivered?.toLowerCase().contains(q) ?? false) ||
-                            (f.materialsReceived?.toLowerCase().contains(q) ?? false) ||
-                            (f.addressLine?.toLowerCase().contains(q) ?? false) ||
-                            (f.addressCity?.toLowerCase().contains(q) ?? false);
-                        }).toList();
+                  final filtered = allForms.where((f) {
+                    final matchesTab = f.formType == _tabTypes[_selectedTabIndex];
+                    if (!matchesTab) return false;
+                    if (_search.isEmpty) return true;
+                    final q = _search.toLowerCase();
+                    return f.taskId.toLowerCase().contains(q) ||
+                      (f.companyName?.toLowerCase().contains(q) ?? false) ||
+                      (f.phone?.toLowerCase().contains(q) ?? false) ||
+                      (f.problemDescription?.toLowerCase().contains(q) ?? false) ||
+                      (f.reportDescription?.toLowerCase().contains(q) ?? false) ||
+                      (f.materialsDelivered?.toLowerCase().contains(q) ?? false) ||
+                      (f.materialsReceived?.toLowerCase().contains(q) ?? false) ||
+                      (f.addressLine?.toLowerCase().contains(q) ?? false) ||
+                      (f.addressCity?.toLowerCase().contains(q) ?? false);
+                  }).toList();
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 64),
+                        child: Text(
+                          'No forms in ${_tabTypes[_selectedTabIndex]}.\nCreate a new form from Home.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.grey[600]),
+                        ),
+                      ),
+                    );
+                  }
                   return LenientRefreshIndicator(
                     onRefresh: () async {
                       setState(() {
@@ -174,7 +248,7 @@ class _FormsScreenState extends State<FormsScreen> {
                             ),
                             subtitle: Text(
                               DateFormat('dd MMM yyyy, hh:mm a').format(
-                                form.createdAt.toUtc().add(const Duration(hours: 5, minutes: 30))
+                                form.createdAt.toLocal()
                               ),
                               style: const TextStyle(fontSize: 12, color: Colors.grey, fontFamily: 'Nunito'),
                             ),
@@ -190,28 +264,28 @@ class _FormsScreenState extends State<FormsScreen> {
                                     builder: (context) => const Center(child: CircularProgressIndicator()),
                                   );
                                   try {
-                                    debugPrint('Generating PDF for form:');
-                                    debugPrint('taskId: \\${form.taskId}');
-                                    debugPrint('dateTime: \\${form.createdAt.toIso8601String()}');
-                                    debugPrint('companyName: \\${form.companyName}');
-                                    debugPrint('phone: \\${form.phone}');
-                                    debugPrint('addressLine: \\${form.addressLine}');
-                                    debugPrint('addressCity: \\${form.addressCity}');
-                                    debugPrint('reportedBy: \\${form.reportedBy}');
-                                    debugPrint('problemDescription: \\${form.problemDescription}');
-                                    debugPrint('reportDescription: \\${form.reportDescription}');
-                                    debugPrint('materialsDelivered: \\${form.materialsDelivered}');
-                                    debugPrint('materialsReceived: \\${form.materialsReceived}');
-                                    debugPrint('beforePhotos: \\${(form.beforePhotoUrls ?? []).toString()}');
-                                    debugPrint('afterPhotos: \\${(form.afterPhotoUrls ?? []).toString()}');
-                                    debugPrint('customerName: ');
-                                    debugPrint('signaturePoints: []');
-                                    debugPrint('signatureImage: empty');
-                                    debugPrint('rating: \\${form.rating}');
+                                    // debugPrint('Generating PDF for form:');
+                                    // debugPrint('taskId: \\${form.taskId}');
+                                    // debugPrint('dateTime: \\${DateFormat('dd MMM yyyy, hh:mm a').format(form.createdAt.toLocal())}');
+                                    // debugPrint('companyName: \\${form.companyName}');
+                                    // debugPrint('phone: \\${form.phone}');
+                                    // debugPrint('addressLine: \\${form.addressLine}');
+                                    // debugPrint('addressCity: \\${form.addressCity}');
+                                    // debugPrint('reportedBy: \\${form.reportedBy}');
+                                    // debugPrint('problemDescription: \\${form.problemDescription}');
+                                    // debugPrint('reportDescription: \\${form.reportDescription}');
+                                    // debugPrint('materialsDelivered: \\${form.materialsDelivered}');
+                                    // debugPrint('materialsReceived: \\${form.materialsReceived}');
+                                    // debugPrint('beforePhotos: \\${(form.beforePhotoUrls ?? []).toString()}');
+                                    // debugPrint('afterPhotos: \\${(form.afterPhotoUrls ?? []).toString()}');
+                                    // debugPrint('customerName: ');
+                                    // debugPrint('signaturePoints: []');
+                                    // debugPrint('signatureImage: empty');
+                                    // debugPrint('rating: \\${form.rating}');
                                     final pdfBytes = await generateTaskReportPDF(
                                       context: context,
                                       taskId: form.taskId,
-                                      dateTime: form.createdAt.toIso8601String(),
+                                      dateTime: DateFormat('dd MMM yyyy, hh:mm a').format(form.createdAt.toLocal()),
                                       companyName: form.companyName ?? '',
                                       phone: form.phone ?? '',
                                       addressLine: form.addressLine ?? '',
@@ -241,7 +315,7 @@ class _FormsScreenState extends State<FormsScreen> {
                                         ),
                                       );
                                     } else if (value == 'share') {
-                                      await Printing.sharePdf(bytes: pdfBytes, filename: '\\${form.taskId}_\\${form.companyName}.pdf');
+                                      await Printing.sharePdf(bytes: pdfBytes, filename: '${form.taskId}_${form.companyName}.pdf');
                                     }
                                   } catch (e, st) {
                                     Navigator.of(context, rootNavigator: true).pop();

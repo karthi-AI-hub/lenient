@@ -13,6 +13,8 @@ import '../utils/lenient_dialog.dart';
 import 'package:uuid/uuid.dart';
 import 'pdf_preview_screen.dart';
 import 'package:path_provider/path_provider.dart';
+// import 'package:permission_handler/permission_handler.dart';
+import 'dart:io' show Platform;
 
 class FormEntryScreen extends StatefulWidget {
   final String? formId;
@@ -47,8 +49,8 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
   Uint8List? signaturePreview;
   List<Offset?> signaturePoints = [];
   FormModel? formEntry;
-  DateTime createdAt = DateTime.now();
-  DateTime updatedAt = DateTime.now();
+  DateTime createdAt = DateTime.now().toUtc();
+  DateTime updatedAt = DateTime.now().toUtc();
 
   @override
   void initState() {
@@ -129,8 +131,8 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
           if (!afterPhotoUrls.contains(url)) removedAfterUrls.add(url);
         }
       }
-      debugPrint('Removed before image URLs: $removedBeforeUrls');
-      debugPrint('Removed after image URLs: $removedAfterUrls');
+      // debugPrint('Removed before image URLs: $removedBeforeUrls');
+      // debugPrint('Removed after image URLs: $removedAfterUrls');
       final form = FormModel(
         id: formEntry?.id ?? const Uuid().v4(),
         taskId: taskIdController.text,
@@ -149,10 +151,10 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
         signatureUrl: formEntry?.signatureUrl,
         beforePhotoUrls: beforePhotoUrls,
         afterPhotoUrls: afterPhotoUrls,
-        createdAt: createdAt,
-        updatedAt: DateTime.now(),
+        createdAt: formEntry?.createdAt ?? DateTime.now().toUtc(),
+        updatedAt: DateTime.now().toUtc(),
       );
-      debugPrint('Calling SupabaseService.uploadForm with isEdit: ${formEntry != null}');
+      // debugPrint('Calling SupabaseService.uploadForm with isEdit: ${formEntry != null}');
       final newForm = await SupabaseService.uploadForm(
         form: form,
         signatureBytes: signaturePreview,
@@ -163,7 +165,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
         oldAfterUrls: removedAfterUrls,
         oldSignatureUrl: formEntry?.signatureUrl,
       );
-      debugPrint('Form upload complete. New form: ${newForm.toMap()}');
+      // debugPrint('Form upload complete. New form: ${newForm.toMap()}');
       setState(() {
         formEntry = newForm;
         beforePhotos.clear();
@@ -185,25 +187,57 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      debugPrint('Error in _saveForm: $e');
+      // debugPrint('Error in _saveForm: $e');
       LenientSnackbar.showError(context, getFriendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() { _saving = false; });
     }
   }
 
-  /// Picks an image from the gallery and adds it to the given photo list.
-  Future<void> _pickImage(List<File> photoList) async {
+  /// Shows a dialog to choose image source (camera or gallery) and picks image.
+  Future<void> _showImageSourceDialog(List<File> photoList) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(photoList, ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(photoList, ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Picks an image from the specified source and adds it to the given photo list.
+  Future<void> _pickImage(List<File> photoList, ImageSource source) async {
     try {
       final picker = ImagePicker();
-      final picked = await picker.pickImage(source: ImageSource.gallery);
+      final picked = await picker.pickImage(source: source);
       if (picked != null) {
         setState(() {
           photoList.add(File(picked.path));
         });
+      } else {
+        // Always show error if no image is selected (either cancel or permission denied)
+        // LenientSnackbar.showError(context, 'No image selected or permission denied.');
       }
     } catch (e) {
-      LenientSnackbar.showError(context, getFriendlyErrorMessage(e));
+      LenientSnackbar.showError(context, 'Failed to pick image: $e');
     }
   }
 
@@ -335,31 +369,27 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
         backgroundColor: const Color(0xFFF7F9FB),
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(72),
-          child: Stack(
-            children: [
-              const LenientAppBar(),
-              SizedBox(
-                height: 72,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 4),
-                    Center(
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () async {
-                          final shouldPop = await _onWillPop();
-                          if (shouldPop && mounted) Navigator.of(context).pop();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+          child: AppBar(
+            backgroundColor: const Color(0xFFF7F9FB),
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            titleSpacing: 0,
+            leading: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () async {
+                  final shouldPop = await _onWillPop();
+                  if (shouldPop && mounted) Navigator.of(context).pop();
+                },
               ),
-            ],
+            ),
+            title: const Text('', style: TextStyle(color: Colors.black)),
+            toolbarHeight: 72,
           ),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
           child: Form(
             key: _formKey,
             child: Column(
@@ -425,15 +455,11 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   controller: materialsReceivedController,
                   maxLines: 3,
                 ),
-                _FormLabel('Customer Name'),
-                _FormTextField(
-                  controller: customerNameController,
-                ),
                 _FormLabel('Before (Max 3 Photos)'),
                 _PhotoGrid(
                   files: beforePhotos,
                   urls: beforePhotoUrls,
-                  onAdd: () => _pickImage(beforePhotos),
+                  onAdd: () => _showImageSourceDialog(beforePhotos),
                   onRemoveFile: (i) => setState(() => beforePhotos.removeAt(i)),
                   onRemoveUrl: (i) => setState(() => beforePhotoUrls.removeAt(i)),
                 ),
@@ -441,9 +467,13 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 _PhotoGrid(
                   files: afterPhotos,
                   urls: afterPhotoUrls,
-                  onAdd: () => _pickImage(afterPhotos),
+                  onAdd: () => _showImageSourceDialog(afterPhotos),
                   onRemoveFile: (i) => setState(() => afterPhotos.removeAt(i)),
                   onRemoveUrl: (i) => setState(() => afterPhotoUrls.removeAt(i)),
+                ),
+                _FormLabel('Customer Name'),
+                _FormTextField(
+                  controller: customerNameController,
                 ),
                 _FormLabel('Customer Signature (only Customers)'),
                 GestureDetector(
@@ -667,7 +697,7 @@ class _PhotoGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('PhotoGrid: urls=$urls, files=${files.map((f) => f.path).toList()}');
+    // debugPrint('PhotoGrid: urls=$urls, files=${files.map((f) => f.path).toList()}');
     final total = files.length + urls.length;
     final canAdd = total < 3;
     return Container(
@@ -682,7 +712,7 @@ class _PhotoGrid extends StatelessWidget {
         children: [
           ...List.generate(3, (i) {
             if (i < urls.length) {
-              debugPrint('PhotoGrid: showing network image: ${urls[i]}');
+              // debugPrint('PhotoGrid: showing network image: ${urls[i]}');
               return Stack(
                 children: [
                   Container(
@@ -717,7 +747,7 @@ class _PhotoGrid extends StatelessWidget {
               );
             } else if (i < urls.length + files.length) {
               final fileIdx = i - urls.length;
-              debugPrint('PhotoGrid: showing file image: ${files[fileIdx].path}');
+              // debugPrint('PhotoGrid: showing file image: ${files[fileIdx].path}');
               return Stack(
                 children: [
                   Container(

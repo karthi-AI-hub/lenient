@@ -20,7 +20,7 @@ class HomeScreen extends StatelessWidget {
             child: LenientRefreshIndicator(
               onRefresh: () async {
                 // TODO: Add logic to refresh home screen data from Supabase if needed.
-                LenientSnackbar.showSuccess(context, 'Data refreshed');
+                // LenientSnackbar.showSuccess(context, 'Data refreshed');
               },
               successMessage: null,
               child: ListView(
@@ -67,7 +67,7 @@ class _FormCard extends StatelessWidget {
         title: Text(
           title,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
             fontSize: 16,
             color: const Color(0xFF222222),
             fontFamily: 'Poppins',

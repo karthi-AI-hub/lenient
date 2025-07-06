@@ -14,15 +14,16 @@ class LenientNavBar extends StatelessWidget {
       backgroundColor: Colors.white,
       elevation: 0,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFFB6F5B6), // light green highlight
+      selectedItemColor: const Color(0xFF22B14C), // more visible green
       unselectedItemColor: Colors.black,
       showSelectedLabels: true,
       showUnselectedLabels: true,
+      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
       items: [
         BottomNavigationBarItem(
           icon: SvgPicture.asset(
             'assets/home-icon.svg',
-            color: currentIndex == 0 ? const Color(0xFFB6F5B6) : Colors.black,
+            color: currentIndex == 0 ? const Color(0xFF22B14C) : Colors.black,
             height: 24,
           ),
           label: 'Home',
@@ -30,7 +31,7 @@ class LenientNavBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: SvgPicture.asset(
             'assets/form-icon.svg',
-            color: currentIndex == 1 ? const Color(0xFFB6F5B6) : Colors.black,
+            color: currentIndex == 1 ? const Color(0xFF22B14C) : Colors.black,
             height: 24,
           ),
           label: 'Forms',

@@ -20,19 +20,17 @@ class PdfPreviewScreen extends StatelessWidget {
   }
 
   Future<String> getLenientDownloadPath(String filename) async {
-    Directory? dir;
+    Directory? downloadsDir;
     if (Platform.isAndroid) {
-      // Use the public Downloads directory
-      final downloads = Directory('/storage/emulated/0/Download/Lenient');
-      if (!(await downloads.exists())) {
-        await downloads.create(recursive: true);
+      downloadsDir = Directory('/storage/emulated/0/Download/Lenient');
+      if (!(await downloadsDir.exists())) {
+        await downloadsDir.create(recursive: true);
       }
-      dir = downloads;
     } else if (Platform.isIOS) {
-      dir = await getApplicationDocumentsDirectory();
+      downloadsDir = await getApplicationDocumentsDirectory();
     }
-    if (dir == null) throw Exception('Cannot access storage');
-    return '${dir.path}/$filename';
+    if (downloadsDir == null) throw Exception('Cannot access storage');
+    return '${downloadsDir.path}/$filename';
   }
 
   @override
@@ -102,6 +100,10 @@ class PdfPreviewScreen extends StatelessWidget {
                     }
                     if (context.mounted) {
                       LenientSnackbar.showSuccess(context, 'PDF saved successfully');
+                      // Return to Forms screen after download
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (Navigator.of(context).canPop()) Navigator.of(context).pop(true);
+                      });
                     }
                   } catch (e) {
                     if (context.mounted) {

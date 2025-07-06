@@ -2,9 +2,9 @@
 
 ![License](https://img.shields.io/github/license/karthi-AI-hub/lenient)
 ![Flutter](https://img.shields.io/badge/Flutter-3.8.1-blue)
-![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-green)
+![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green)
 
-A modern, pixel-perfect Flutter application for seamless form management, PDF generation, and document handling. Built with Material 3, custom fonts, and a beautiful, responsive UI to match real-world business needs.
+A modern, pixel-perfect Flutter application for seamless form management, PDF generation, and document handling. Built with Material 3, custom fonts, and a beautiful, responsive UI to match real-world business needs. 
 
 ---
 
@@ -22,13 +22,13 @@ A modern, pixel-perfect Flutter application for seamless form management, PDF ge
 - 📝 Advanced form creation & management
 - 🖊️ Signature capture and star rating
 - 📅 Date/time picker, dropdowns, and validation
-- 📷 Photo grid (add/remove images)
+- 📷 Photo grid (add/remove images from camera or gallery)
 - 📄 PDF generation with custom template
-- 👁️ PDF preview and sharing
+- 👁️ PDF preview, download (to Downloads/Lenient), and sharing
 - ⬇️ Download and manage documents
 - 🎨 Custom themes, icons, and branding
-- 💾 Local data storage (Hive)
-- 🔄 Cross-platform: Android, iOS, Web
+- 🔄 Cross-platform: Android, iOS
+- ⚡ Internal APK distribution
 
 ---
 
@@ -61,6 +61,11 @@ To run this project locally:
    ```bash
    flutter run
    ```
+4. **Build APK for internal distribution:**
+   ```bash
+   flutter build apk --release
+   # Share the APK file in build/app/outputs/flutter-apk/app-release.apk
+   ```
 
 ---
 
@@ -86,14 +91,21 @@ lenient_technologies/
 ## 📦 Dependencies
 
 - [Flutter](https://flutter.dev/) 3.8+
-- [hive](https://pub.dev/packages/hive)
-- [hive_flutter](https://pub.dev/packages/hive_flutter)
 - [path_provider](https://pub.dev/packages/path_provider)
 - [uuid](https://pub.dev/packages/uuid)
 - [flutter_svg](https://pub.dev/packages/flutter_svg)
 - [pdf](https://pub.dev/packages/pdf)
 - [printing](https://pub.dev/packages/printing)
 - [image_picker](https://pub.dev/packages/image_picker)
+
+---
+
+## 🔒 Permissions
+
+- Camera: For taking photos
+- Storage: For saving PDFs to Downloads/Lenient (Android)
+- Internet: For any network features
+- All permissions are handled by plugins; no manual permission code required for image picking or PDF saving.
 
 ---
 

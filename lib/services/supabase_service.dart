@@ -19,20 +19,28 @@ class SupabaseService {
     List<String> oldBeforeUrls = const [],
     List<String> oldAfterUrls = const [],
     String? oldSignatureUrl,
+    void Function(double progress)? onProgress,
   }) async {
     if (isEdit) {
-      debugPrint('Editing form: deleting replaced images and signature');
+      // debugPrint('Editing form: deleting replaced images and signature');
       for (final url in oldBeforeUrls) {
-        debugPrint('Deleting replaced before image: $url');
+        // debugPrint('Deleting replaced before image: $url');
         await _deleteImage(url);
       }
       for (final url in oldAfterUrls) {
-        debugPrint('Deleting replaced after image: $url');
+        // debugPrint('Deleting replaced after image: $url');
         await _deleteImage(url);
       }
       if (oldSignatureUrl != null && form.signatureUrl != oldSignatureUrl) {
-        debugPrint('Deleting replaced signature: $oldSignatureUrl');
+        // debugPrint('Deleting replaced signature: $oldSignatureUrl');
         await _deleteImage(oldSignatureUrl);
+      }
+    }
+    int totalUploads = before.length + after.length + (signatureBytes != null ? 1 : 0);
+    int completed = 0;
+    void reportProgress() {
+      if (onProgress != null && totalUploads > 0) {
+        onProgress(completed / totalUploads);
       }
     }
     // Prepare upload futures
@@ -42,7 +50,11 @@ class SupabaseService {
         signatureBytes,
         'signatures/${form.taskId}.png',
         contentType: 'image/png',
-      );
+      ).then((url) {
+        completed++;
+        reportProgress();
+        return url;
+      });
     }
     List<Future<String>> beforeFutures = [];
     final uuid = Uuid();
@@ -50,15 +62,24 @@ class SupabaseService {
       final fileName = 'before-${uuid.v4()}.jpg';
       beforeFutures.add(_compressImage(f).then((bytes) =>
         _uploadImage(bytes, 'photos-before/${form.taskId}/$fileName')
-      ));
+      ).then((url) {
+        completed++;
+        reportProgress();
+        return url;
+      }));
     }
     List<Future<String>> afterFutures = [];
     for (final f in after) {
       final fileName = 'after-${uuid.v4()}.jpg';
       afterFutures.add(_compressImage(f).then((bytes) =>
         _uploadImage(bytes, 'photos-after/${form.taskId}/$fileName')
-      ));
+      ).then((url) {
+        completed++;
+        reportProgress();
+        return url;
+      }));
     }
+    reportProgress(); // initial 0.0
     // Await all uploads in parallel
     final results = await Future.wait([
       if (signatureFuture != null) signatureFuture,
@@ -75,8 +96,8 @@ class SupabaseService {
     final beforeUrls = results.skip(resultIdx).take(beforeFutures.length).cast<String>().toList();
     resultIdx += beforeFutures.length;
     final afterUrls = results.skip(resultIdx).take(afterFutures.length).cast<String>().toList();
-    debugPrint('Final beforeUrls: $beforeUrls');
-    debugPrint('Final afterUrls: $afterUrls');
+    // debugPrint('Final beforeUrls: $beforeUrls');
+    // debugPrint('Final afterUrls: $afterUrls');
     final newForm = form.copyWith(
       signatureUrl: signatureUrl,
       beforePhotoUrls: [
@@ -89,13 +110,13 @@ class SupabaseService {
       ].take(3).toList().cast<String>(),
       updatedAt: DateTime.now(),
     );
-    debugPrint('Saving form to database: ${newForm.toMap()}');
+    // debugPrint('Saving form to database: ${newForm.toMap()}');
     if (isEdit) {
       await _client.from('forms').update(newForm.toMap()).eq('id', form.id);
     } else {
       await _client.from('forms').insert(newForm.toMap());
     }
-    debugPrint('Form saved. Returning newForm.');
+    // debugPrint('Form saved. Returning newForm.');
     return newForm;
   }
 
@@ -119,7 +140,7 @@ class SupabaseService {
       }
       // Try to remove the folder itself (may be a no-op)
       await _client.storage.from(bucket).remove([folder]);
-      debugPrint('Deleted folder and contents: $bucket/$folder');
+      // debugPrint('Deleted folder and contents: $bucket/$folder');
     } catch (e) {
       debugPrint('Failed to delete folder $bucket/$folder: $e');
     }
@@ -138,13 +159,13 @@ class SupabaseService {
     if (taskId != null && taskId.isNotEmpty) {
       try {
         await _client.storage.from('photos-before').remove(['$taskId/']);
-        debugPrint('Deleted folder: photos-before/$taskId/');
+        // debugPrint('Deleted folder: photos-before/$taskId/');
       } catch (e) {
         debugPrint('Failed to delete before folder: $e');
       }
       try {
         await _client.storage.from('photos-after').remove(['$taskId/']);
-        debugPrint('Deleted folder: photos-after/$taskId/');
+        // debugPrint('Deleted folder: photos-after/$taskId/');
       } catch (e) {
         debugPrint('Failed to delete after folder: $e');
       }
@@ -186,10 +207,10 @@ class SupabaseService {
     } else {
       throw Exception('Unknown bucket for path: $path');
     }
-    debugPrint('Uploading to bucket: $bucket, filePath: $filePath, contentType: $contentType');
+    // debugPrint('Uploading to bucket: $bucket, filePath: $filePath, contentType: $contentType');
     final storage = _client.storage.from(bucket);
     await storage.uploadBinary(filePath, bytes, fileOptions: FileOptions(contentType: contentType, upsert: true));
-    debugPrint('Upload complete for $filePath');
+    // debugPrint('Upload complete for $filePath');
     return storage.getPublicUrl(filePath);
   }
 
@@ -205,7 +226,7 @@ class SupabaseService {
       }
       final bucket = segments[publicIdx + 1];
       final filePath = segments.sublist(publicIdx + 2).join('/');
-      debugPrint('Deleting from bucket: $bucket, file: $filePath');
+      // debugPrint('Deleting from bucket: $bucket, file: $filePath');
       await _client.storage.from(bucket).remove([filePath]);
       debugPrint('Delete complete for $filePath');
     } catch (e) {

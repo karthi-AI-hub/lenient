@@ -10,24 +10,19 @@ class LenientAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       automaticallyImplyLeading: false,
       titleSpacing: 0,
+      centerTitle: true,
       title: Padding(
-        padding: const EdgeInsets.only(left: 24, top: 12, bottom: 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/logo.png',
-              height: 48,
-              fit: BoxFit.contain,
-            ),
-          ],
+        padding: const EdgeInsets.only(top: 18),
+        child: Image.asset(
+          'assets/logo.png',
+          height: 48,
+          fit: BoxFit.contain,
         ),
       ),
-      toolbarHeight: 72,
+      toolbarHeight: 56,
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(72);
+  Size get preferredSize => const Size.fromHeight(56);
 } 
