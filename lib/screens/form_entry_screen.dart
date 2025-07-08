@@ -15,6 +15,7 @@ import 'pdf_preview_screen.dart';
 import 'package:path_provider/path_provider.dart';
 // import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
+import '../utils/permission_manager.dart';
 
 class FormEntryScreen extends StatefulWidget {
   final String? formId;
@@ -204,17 +205,21 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: const Text('Take Photo'),
-              onTap: () {
+              onTap: () async {
                 Navigator.of(context).pop();
-                _pickImage(photoList, ImageSource.camera);
+                if (await PermissionManager.ensureCameraAndGalleryPermissions(context)) {
+                  _pickImage(photoList, ImageSource.camera);
+                }
               },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
               title: const Text('Choose from Gallery'),
-              onTap: () {
+              onTap: () async {
                 Navigator.of(context).pop();
-                _pickImage(photoList, ImageSource.gallery);
+                if (await PermissionManager.ensureCameraAndGalleryPermissions(context)) {
+                  _pickImage(photoList, ImageSource.gallery);
+                }
               },
             ),
           ],

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
 import 'dart:typed_data';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:media_scanner/media_scanner.dart';
 import '../utils/lenient_snackbar.dart';
+import '../utils/permission_manager.dart';
 
 class PdfPreviewScreen extends StatelessWidget {
   final Uint8List? pdfBytes;
@@ -51,6 +53,7 @@ class PdfPreviewScreen extends StatelessWidget {
           }
           return PdfPreview(
             build: (format) async => snapshot.data!,
+            initialPageFormat: PdfPageFormat.a4,
             canChangePageFormat: false,
             canChangeOrientation: false,
             canDebug: false,
@@ -88,6 +91,7 @@ class PdfPreviewScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: () async {
+                  if (!await PermissionManager.ensureStoragePermission(context)) return;
                   try {
                     final bytes = await _loadBytes();
                     String filename = '${taskId ?? 'document'}_${companyName ?? ''}.pdf';

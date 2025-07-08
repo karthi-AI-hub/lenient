@@ -35,6 +35,7 @@ dependencies:
   uuid: ^4.3.3
   media_scanner: ^2.0.0
   image: ^4.1.3
+  permission_handler: ^11.3.1
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -86,13 +87,15 @@ flutter:
     - assets/form-icon.svg
     - assets/home-icon.svg
     - assets/logo.png
-    - assets/template_green.jpg
+    # - assets/template_green.jpg
     - assets/fonts/Nunito-Regular.ttf
     - assets/fonts/DejaVuSans.ttf
     - assets/phone-icon.png
     - assets/email-icon.png
     - assets/address-icon.png
-    - assets/icon.png
+    # - assets/icon.png
+    - assets/lenient_header.png
+    - assets/lenient_footer.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -133,7 +136,7 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/icon.png"
+  image_path: "assets/lt_icon.png"
 
 flutter_native_splash:
   color: "#F7F9FB"
