@@ -37,7 +37,10 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
   final TextEditingController materialsDeliveredController = TextEditingController();
   final TextEditingController materialsReceivedController = TextEditingController();
   final TextEditingController customerNameController = TextEditingController();
-  String reportedBy = 'Durai';
+  List<String> reportedBy = [];
+  final List<String> reportedByOptions = [
+    'Durai', 'Elango', 'Lenin', 'Mani', 'Mohan ID', 'Mohan', 'Nandhini', 'Priya', 'Seeni', 'Other'
+  ];
   List<File> beforePhotos = [];
   List<String> beforePhotoUrls = [];
   List<File> afterPhotos = [];
@@ -85,12 +88,14 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       if (formEntry != null) {
         setState(() {
           _loading = false;
-          taskIdController.text = formEntry!.taskId;
+          taskIdController.text = formEntry!.taskId.startsWith('LTS-')
+          ? formEntry!.taskId.substring(4)
+          : formEntry!.taskId;
           companyNameController.text = formEntry!.companyName ?? '';
           phoneController.text = formEntry!.phone ?? '';
           addressLineController.text = formEntry!.addressLine ?? '';
           addressCityController.text = formEntry!.addressCity ?? '';
-          reportedBy = formEntry!.reportedBy ?? '';
+          reportedBy = (formEntry!.reportedBy ?? '').split(',').map((s) => s.trim()).toList();
           problemDescriptionController.text = formEntry!.problemDescription ?? '';
           reportDescriptionController.text = formEntry!.reportDescription ?? '';
           materialsDeliveredController.text = formEntry!.materialsDelivered ?? '';
@@ -121,6 +126,10 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
     setState(() { _saving = true; });
     await Future.delayed(const Duration(milliseconds: 100)); // Let UI update
     try {
+      // Ensure Task ID starts with 'LTS-'
+      if (!taskIdController.text.startsWith('LTS-')) {
+        taskIdController.text = 'LTS-' + taskIdController.text;
+      }
       // Track removed images
       final removedBeforeUrls = <String>[];
       final removedAfterUrls = <String>[];
@@ -142,7 +151,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
         phone: phoneController.text,
         addressLine: addressLineController.text,
         addressCity: addressCityController.text,
-        reportedBy: reportedBy,
+        reportedBy: reportedBy.join(', '),
         problemDescription: problemDescriptionController.text,
         reportDescription: reportDescriptionController.text,
         materialsDelivered: materialsDeliveredController.text,
@@ -402,18 +411,43 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
               children: [
                 _FormLabel('Task ID', required: true),
                 _FormTextField(
-                  hint: 'LTS-',
                   controller: taskIdController,
                   validator: (v) => v == null || v.isEmpty ? 'Task ID is required' : null,
+                  decoration: InputDecoration(
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 8, right: 0),
+                      child: Text(
+                        'LTS-',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+                    hintStyle: const TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                    ),
+                  ),
                 ),
-                _FormLabel('Company / Contact name', required: true),
+                _FormLabel('Company / Contact Name', required: true),
                 _FormTextField(
                   controller: companyNameController,
                   validator: (v) => v == null || v.isEmpty ? 'Company/Contact name is required' : null,
                 ),
                 _FormLabel('Phone'),
                 _FormTextField(
-                  hint: '(+91) 9876543210',
+                  // hint: '(+91) 9876543210',
                   controller: phoneController,
                 ),
                 _FormLabel('Address'),
@@ -435,10 +469,67 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   ],
                 ),
                 _FormLabel('Reported By'),
-                _FormDropdown(
-                  items: const ['Durai', 'Elango', 'Lenin', 'Mani', 'Mohan ID', 'Mohan', 'Nandhini ', 'Priya', 'Seeni', 'Other'],
-                  value: reportedBy,
-                  onChanged: (v) => setState(() => reportedBy = v ?? 'Durai'),
+                GestureDetector(
+                  onTap: () async {
+                    final selected = await showDialog<List<String>>(
+                      context: context,
+                      builder: (context) {
+                        List<String> tempSelected = List<String>.from(reportedBy);
+                        return StatefulBuilder(
+                          builder: (context, setStateDialog) {
+                            return AlertDialog(
+                              title: Text('Select Reported By'),
+                              content: SingleChildScrollView(
+                                child: Column(
+                                  children: reportedByOptions.map((name) {
+                                    return CheckboxListTile(
+                                      value: tempSelected.contains(name),
+                                      title: Text(name),
+                                      onChanged: (checked) {
+                                        setStateDialog(() {
+                                          if (checked == true) {
+                                            tempSelected.add(name);
+                                          } else {
+                                            tempSelected.remove(name);
+                                          }
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, tempSelected),
+                                  child: Text('OK'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+                    if (selected != null) {
+                      setState(() => reportedBy = selected);
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE0E0E0)),
+                    ),
+                    child: Text(
+                      reportedBy.isEmpty ? 'Select...' : reportedBy.join(', '),
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: reportedBy.isEmpty ? Colors.grey : Colors.black,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
                 ),
                 _FormLabel('Problem Description'),
                 _FormTextField(
@@ -554,7 +645,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
           phoneController.text != formEntry!.phone ||
           addressLineController.text != formEntry!.addressLine ||
           addressCityController.text != formEntry!.addressCity ||
-          reportedBy != formEntry!.reportedBy ||
+          reportedBy.join(', ') != formEntry!.reportedBy ||
           problemDescriptionController.text != formEntry!.problemDescription ||
           reportDescriptionController.text != formEntry!.reportDescription ||
           materialsDeliveredController.text != formEntry!.materialsDelivered ||
@@ -570,7 +661,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
           phoneController.text.isNotEmpty ||
           addressLineController.text.isNotEmpty ||
           addressCityController.text.isNotEmpty ||
-          reportedBy != 'Durai' ||
+          reportedBy.isNotEmpty ||
           problemDescriptionController.text.isNotEmpty ||
           reportDescriptionController.text.isNotEmpty ||
           materialsDeliveredController.text.isNotEmpty ||
@@ -628,7 +719,8 @@ class _FormTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final String? initialValue;
   final TextEditingController? controller;
-  const _FormTextField({this.hint, this.maxLines = 1, this.onSaved, this.validator, this.initialValue, this.controller});
+  final InputDecoration? decoration;
+  const _FormTextField({this.hint, this.maxLines = 1, this.onSaved, this.validator, this.initialValue, this.controller, this.decoration});
 
   @override
   Widget build(BuildContext context) {
@@ -636,7 +728,7 @@ class _FormTextField extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: TextFormField(
         maxLines: maxLines,
-        decoration: InputDecoration(
+        decoration: decoration ?? InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(fontFamily: 'Poppins', color: Colors.grey),
           filled: true,

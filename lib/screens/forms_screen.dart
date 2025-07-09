@@ -257,7 +257,14 @@ class _FormsScreenState extends State<FormsScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               icon: const Icon(Icons.more_vert, color: Color(0xFF7ED957)),
                               onSelected: (value) async {
-                                if (value == 'preview' || value == 'share') {
+                                if (value == 'edit') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => FormEntryScreen(formId: form.id),
+                                    ),
+                                  );
+                                } else if (value == 'preview' || value == 'share') {
                                   showDialog(
                                     context: context,
                                     barrierDismissible: false,
@@ -350,6 +357,13 @@ class _FormsScreenState extends State<FormsScreen> {
                               },
                               itemBuilder: (context) => [
                                 const PopupMenuItem(
+                                  value: 'edit',
+                                  child: ListTile(
+                                    leading: Icon(Icons.edit, color: Color(0xFF7ED957)),
+                                    title: Text('Edit', style: TextStyle(fontFamily: 'Poppins')),
+                                  ),
+                                ),
+                                const PopupMenuItem(
                                   value: 'preview',
                                   child: ListTile(
                                     leading: Icon(Icons.picture_as_pdf, color: Color(0xFF7ED957)),
@@ -372,14 +386,6 @@ class _FormsScreenState extends State<FormsScreen> {
                                 ),
                               ],
                             ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => FormEntryScreen(formId: form.id),
-                                ),
-                              );
-                            },
                           ),
                         );
                       },
