@@ -1,3 +1,4 @@
+
 import 'package:uuid/uuid.dart';
 
 class FormModel {
@@ -140,7 +141,7 @@ class FormModel {
     return FormModel(
       id: const Uuid().v4(),
       taskId: '',
-      formType: 'Form1',
+      formType: '',
       companyName: '',
       createdAt: now,
       updatedAt: now,

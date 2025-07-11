@@ -13,13 +13,15 @@ import '../utils/lenient_dialog.dart';
 import 'package:uuid/uuid.dart';
 import 'pdf_preview_screen.dart';
 import 'package:path_provider/path_provider.dart';
+
 // import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import '../utils/permission_manager.dart';
 
 class FormEntryScreen extends StatefulWidget {
   final String? formId;
-  const FormEntryScreen({super.key, this.formId});
+  final String? formType; // Add this
+  const FormEntryScreen({super.key, this.formId, this.formType});
 
   @override
   State<FormEntryScreen> createState() => _FormEntryScreenState();
@@ -32,14 +34,28 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController addressLineController = TextEditingController();
   final TextEditingController addressCityController = TextEditingController();
-  final TextEditingController problemDescriptionController = TextEditingController();
-  final TextEditingController reportDescriptionController = TextEditingController();
-  final TextEditingController materialsDeliveredController = TextEditingController();
-  final TextEditingController materialsReceivedController = TextEditingController();
+  final TextEditingController problemDescriptionController =
+      TextEditingController();
+  final TextEditingController reportDescriptionController =
+      TextEditingController();
+  final TextEditingController materialsDeliveredController =
+      TextEditingController();
+  final TextEditingController materialsReceivedController =
+      TextEditingController();
   final TextEditingController customerNameController = TextEditingController();
   List<String> reportedBy = [];
   final List<String> reportedByOptions = [
-    'Durai', 'Elango', 'Lenin', 'Mani', 'Mohan ID', 'Mohan', 'Nandhini', 'Priya', 'Seeni', 'Other'
+    'Durai',
+    'Elango',
+    'Lenin',
+    'Mohan ID',
+    'Mohan',
+    'Nandhini',
+    'Seeni',
+    'Srini',
+    'Mahes',
+    'Madhu',
+    'Other',
   ];
   List<File> beforePhotos = [];
   List<String> beforePhotoUrls = [];
@@ -63,6 +79,16 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       _loadForm();
     } else {
       _loading = false;
+      // Set prefix based on formType
+      if (widget.formType == 'LTCR') {
+        if (!taskIdController.text.startsWith('LTS-')) {
+          taskIdController.text = 'LTS-';
+        }
+      } else if (widget.formType == 'LCCR') {
+        if (!taskIdController.text.startsWith('LCS-')) {
+          taskIdController.text = 'LCS-';
+        }
+      }
     }
   }
 
@@ -89,16 +115,21 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
         setState(() {
           _loading = false;
           taskIdController.text = formEntry!.taskId.startsWith('LTS-')
-          ? formEntry!.taskId.substring(4)
-          : formEntry!.taskId;
+              ? formEntry!.taskId.substring(4)
+              : formEntry!.taskId;
           companyNameController.text = formEntry!.companyName ?? '';
           phoneController.text = formEntry!.phone ?? '';
           addressLineController.text = formEntry!.addressLine ?? '';
           addressCityController.text = formEntry!.addressCity ?? '';
-          reportedBy = (formEntry!.reportedBy ?? '').split(',').map((s) => s.trim()).toList();
-          problemDescriptionController.text = formEntry!.problemDescription ?? '';
+          reportedBy = (formEntry!.reportedBy ?? '')
+              .split(',')
+              .map((s) => s.trim())
+              .toList();
+          problemDescriptionController.text =
+              formEntry!.problemDescription ?? '';
           reportDescriptionController.text = formEntry!.reportDescription ?? '';
-          materialsDeliveredController.text = formEntry!.materialsDelivered ?? '';
+          materialsDeliveredController.text =
+              formEntry!.materialsDelivered ?? '';
           materialsReceivedController.text = formEntry!.materialsReceived ?? '';
           customerNameController.text = formEntry!.customeName ?? '';
           beforePhotos = [];
@@ -111,11 +142,15 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
           updatedAt = formEntry!.updatedAt;
         });
       } else {
-        setState(() { _loading = false; });
+        setState(() {
+          _loading = false;
+        });
         LenientSnackbar.showWarning(context, 'Form not found.');
       }
     } catch (e) {
-      setState(() { _loading = false; });
+      setState(() {
+        _loading = false;
+      });
       LenientSnackbar.showError(context, getFriendlyErrorMessage(e));
     }
   }
@@ -123,12 +158,22 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
   /// Saves the form to Supabase. Shows loading indicator and error feedback.
   void _saveForm() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _saving = true; });
+    setState(() {
+      _saving = true;
+    });
     await Future.delayed(const Duration(milliseconds: 100)); // Let UI update
     try {
-      // Ensure Task ID starts with 'LTS-'
-      if (!taskIdController.text.startsWith('LTS-')) {
-        taskIdController.text = 'LTS-' + taskIdController.text;
+      // Ensure Task ID starts with correct prefix
+      if (widget.formType == 'LTCR' &&
+          !taskIdController.text.startsWith('LTS-')) {
+        taskIdController.text =
+            'LTS-' +
+            taskIdController.text.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
+      } else if (widget.formType == 'LCCR' &&
+          !taskIdController.text.startsWith('LCS-')) {
+        taskIdController.text =
+            'LCS-' +
+            taskIdController.text.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
       }
       // Track removed images
       final removedBeforeUrls = <String>[];
@@ -146,7 +191,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       final form = FormModel(
         id: formEntry?.id ?? const Uuid().v4(),
         taskId: taskIdController.text,
-        formType: 'Form1',
+        formType: widget.formType ?? 'LTCR', // Store as 'LTCR' or 'LCCR'
         companyName: companyNameController.text,
         phone: phoneController.text,
         addressLine: addressLineController.text,
@@ -200,7 +245,10 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       // debugPrint('Error in _saveForm: $e');
       LenientSnackbar.showError(context, getFriendlyErrorMessage(e));
     } finally {
-      if (mounted) setState(() { _saving = false; });
+      if (mounted)
+        setState(() {
+          _saving = false;
+        });
     }
   }
 
@@ -216,7 +264,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
               title: const Text('Take Photo'),
               onTap: () async {
                 Navigator.of(context).pop();
-                if (await PermissionManager.ensureCameraAndGalleryPermissions(context)) {
+                if (await PermissionManager.ensureCameraAndGalleryPermissions(
+                  context,
+                )) {
                   _pickImage(photoList, ImageSource.camera);
                 }
               },
@@ -226,7 +276,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
               title: const Text('Choose from Gallery'),
               onTap: () async {
                 Navigator.of(context).pop();
-                if (await PermissionManager.ensureCameraAndGalleryPermissions(context)) {
+                if (await PermissionManager.ensureCameraAndGalleryPermissions(
+                  context,
+                )) {
                   _pickImage(photoList, ImageSource.gallery);
                 }
               },
@@ -285,7 +337,11 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                           onDraw: (pts) async {
                             setStateDialog(() => tempPoints = List.from(pts));
                             if (pts.isNotEmpty) {
-                              tempImage = await convertSignatureToImage(pts, width: 350, height: 120);
+                              tempImage = await convertSignatureToImage(
+                                pts,
+                                width: 350,
+                                height: 120,
+                              );
                             }
                           },
                           onClear: () {
@@ -310,7 +366,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.red,
                               side: const BorderSide(color: Colors.red),
-                              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             onPressed: () {
                               setStateDialog(() {
@@ -329,13 +387,18 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF7ED957),
                               foregroundColor: Colors.white,
-                              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             onPressed: _uploadingSignature
                                 ? null
                                 : () async {
                                     if (tempPoints.isEmpty) {
-                                      LenientSnackbar.showWarning(context, 'Please provide a signature.');
+                                      LenientSnackbar.showWarning(
+                                        context,
+                                        'Please provide a signature.',
+                                      );
                                       return;
                                     }
                                     setState(() {
@@ -350,7 +413,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                           TextButton(
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.black,
-                              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             onPressed: () {
                               Navigator.of(context).pop();
@@ -373,9 +438,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return WillPopScope(
       onWillPop: _onWillPop,
@@ -412,7 +475,8 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 _FormLabel('Task ID', required: true),
                 _FormTextField(
                   controller: taskIdController,
-                  validator: (v) => v == null || v.isEmpty ? 'Task ID is required' : null,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Task ID is required' : null,
                   decoration: InputDecoration(
                     prefixIcon: Padding(
                       padding: const EdgeInsets.only(left: 8, right: 0),
@@ -425,11 +489,20 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                         ),
                       ),
                     ),
-                    prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
-                    hintStyle: const TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+                    prefixIconConstraints: BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.grey,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 0,
+                      vertical: 14,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -443,7 +516,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 _FormLabel('Company / Contact Name', required: true),
                 _FormTextField(
                   controller: companyNameController,
-                  validator: (v) => v == null || v.isEmpty ? 'Company/Contact name is required' : null,
+                  validator: (v) => v == null || v.isEmpty
+                      ? 'Company/Contact name is required'
+                      : null,
                 ),
                 _FormLabel('Phone'),
                 _FormTextField(
@@ -474,7 +549,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     final selected = await showDialog<List<String>>(
                       context: context,
                       builder: (context) {
-                        List<String> tempSelected = List<String>.from(reportedBy);
+                        List<String> tempSelected = List<String>.from(
+                          reportedBy,
+                        );
                         return StatefulBuilder(
                           builder: (context, setStateDialog) {
                             return AlertDialog(
@@ -482,25 +559,36 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                               content: SingleChildScrollView(
                                 child: Column(
                                   children: reportedByOptions.map((name) {
-                                    return CheckboxListTile(
-                                      value: tempSelected.contains(name),
-                                      title: Text(name),
-                                      onChanged: (checked) {
-                                        setStateDialog(() {
-                                          if (checked == true) {
-                                            tempSelected.add(name);
-                                          } else {
-                                            tempSelected.remove(name);
-                                          }
-                                        });
-                                      },
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 0,
+                                      ), // Remove extra vertical space
+                                      child: CheckboxListTile(
+                                        value: tempSelected.contains(name),
+                                        title: Text(name),
+                                        contentPadding: EdgeInsets
+                                            .zero, // Remove left/right padding
+                                        dense: true, // Reduce height
+                                        visualDensity: VisualDensity
+                                            .compact, // Make even more compact
+                                        onChanged: (checked) {
+                                          setStateDialog(() {
+                                            if (checked == true) {
+                                              tempSelected.add(name);
+                                            } else {
+                                              tempSelected.remove(name);
+                                            }
+                                          });
+                                        },
+                                      ),
                                     );
                                   }).toList(),
                                 ),
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () => Navigator.pop(context, tempSelected),
+                                  onPressed: () =>
+                                      Navigator.pop(context, tempSelected),
                                   child: Text('OK'),
                                 ),
                               ],
@@ -515,7 +603,10 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   },
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -557,7 +648,8 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   urls: beforePhotoUrls,
                   onAdd: () => _showImageSourceDialog(beforePhotos),
                   onRemoveFile: (i) => setState(() => beforePhotos.removeAt(i)),
-                  onRemoveUrl: (i) => setState(() => beforePhotoUrls.removeAt(i)),
+                  onRemoveUrl: (i) =>
+                      setState(() => beforePhotoUrls.removeAt(i)),
                 ),
                 _FormLabel('After (Max 3 Photos)'),
                 _PhotoGrid(
@@ -565,12 +657,11 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                   urls: afterPhotoUrls,
                   onAdd: () => _showImageSourceDialog(afterPhotos),
                   onRemoveFile: (i) => setState(() => afterPhotos.removeAt(i)),
-                  onRemoveUrl: (i) => setState(() => afterPhotoUrls.removeAt(i)),
+                  onRemoveUrl: (i) =>
+                      setState(() => afterPhotoUrls.removeAt(i)),
                 ),
                 _FormLabel('Customer Name'),
-                _FormTextField(
-                  controller: customerNameController,
-                ),
+                _FormTextField(controller: customerNameController),
                 _FormLabel('Customer Signature (only Customers)'),
                 GestureDetector(
                   onTap: _showSignatureDialog,
@@ -585,8 +676,11 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     child: signaturePreview != null
                         ? Image.memory(signaturePreview!, height: 64)
                         : (signatureUrl != null
-                            ? Image.network(signatureUrl!, height: 64)
-                            : const Text('Tap to sign', style: TextStyle(color: Colors.grey))),
+                              ? Image.network(signatureUrl!, height: 64)
+                              : const Text(
+                                  'Tap to sign',
+                                  style: TextStyle(color: Colors.grey),
+                                )),
                   ),
                 ),
                 if (_saving)
@@ -606,11 +700,19 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF7ED957),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     onPressed: _saveForm,
-                    child: const Text('Save', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -627,7 +729,8 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       final confirm = await LenientDialog.showConfirm(
         context,
         title: 'Discard changes?',
-        content: 'You have unsaved changes. Are you sure you want to discard them?',
+        content:
+            'You have unsaved changes. Are you sure you want to discard them?',
         confirmText: 'Discard',
         cancelText: 'Cancel',
         confirmColor: Colors.red,
@@ -676,9 +779,11 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
 
   String getFriendlyErrorMessage(dynamic error) {
     final msg = error.toString();
-    if (msg.contains('duplicate key value') && msg.contains('forms_task_id_key')) {
+    if (msg.contains('duplicate key value') &&
+        msg.contains('forms_task_id_key')) {
       return 'Task ID already exists. Try another Task ID';
-    } else if (msg.contains('row-level security policy') || msg.contains('Unauthorized')) {
+    } else if (msg.contains('row-level security policy') ||
+        msg.contains('Unauthorized')) {
       return 'Not authorized to perform this action.';
     } else if (msg.contains('StorageException')) {
       return 'Upload failed. Try again';
@@ -702,7 +807,11 @@ class _FormLabel extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 15),
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+            ),
           ),
           if (required)
             const Text('*', style: TextStyle(color: Colors.red, fontSize: 15)),
@@ -720,7 +829,15 @@ class _FormTextField extends StatelessWidget {
   final String? initialValue;
   final TextEditingController? controller;
   final InputDecoration? decoration;
-  const _FormTextField({this.hint, this.maxLines = 1, this.onSaved, this.validator, this.initialValue, this.controller, this.decoration});
+  const _FormTextField({
+    this.hint,
+    this.maxLines = 1,
+    this.onSaved,
+    this.validator,
+    this.initialValue,
+    this.controller,
+    this.decoration,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -728,21 +845,29 @@ class _FormTextField extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: TextFormField(
         maxLines: maxLines,
-        decoration: decoration ?? InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(fontFamily: 'Poppins', color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-          ),
-        ),
+        decoration:
+            decoration ??
+            InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(
+                fontFamily: 'Poppins',
+                color: Colors.grey,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              ),
+            ),
         onSaved: onSaved,
         validator: validator,
         initialValue: controller == null ? initialValue : null,
@@ -756,20 +881,39 @@ class _FormDropdown extends StatelessWidget {
   final List<String> items;
   final String value;
   final Function(String?) onChanged;
-  const _FormDropdown({required this.items, required this.value, required this.onChanged});
+  const _FormDropdown({
+    required this.items,
+    required this.value,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: DropdownButtonFormField<String>(
-        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontFamily: 'Poppins')))).toList(),
+        items: items
+            .map(
+              (e) => DropdownMenuItem(
+                value: e,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 2,
+                  ), // Reduce vertical padding between names
+                  child: Text(e, style: const TextStyle(fontFamily: 'Poppins')),
+                ),
+              ),
+            )
+            .toList(),
         onChanged: onChanged,
         value: value,
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -790,7 +934,13 @@ class _PhotoGrid extends StatelessWidget {
   final VoidCallback onAdd;
   final Function(int) onRemoveFile;
   final Function(int) onRemoveUrl;
-  const _PhotoGrid({required this.files, required this.urls, required this.onAdd, required this.onRemoveFile, required this.onRemoveUrl});
+  const _PhotoGrid({
+    required this.files,
+    required this.urls,
+    required this.onAdd,
+    required this.onRemoveFile,
+    required this.onRemoveUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -836,7 +986,11 @@ class _PhotoGrid extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         padding: const EdgeInsets.all(2),
-                        child: const Icon(Icons.close, size: 16, color: Colors.white),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -871,7 +1025,11 @@ class _PhotoGrid extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         padding: const EdgeInsets.all(2),
-                        child: const Icon(Icons.close, size: 16, color: Colors.white),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -928,7 +1086,12 @@ class _SignatureBox extends StatefulWidget {
   final ValueChanged<List<Offset?>> onDraw;
   final VoidCallback onClear;
   final double height;
-  const _SignatureBox({this.points = const [], required this.onDraw, required this.onClear, this.height = 80});
+  const _SignatureBox({
+    this.points = const [],
+    required this.onDraw,
+    required this.onClear,
+    this.height = 80,
+  });
 
   @override
   State<_SignatureBox> createState() => _SignatureBoxState();
@@ -1005,7 +1168,8 @@ class _SignaturePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SignaturePainter oldDelegate) => oldDelegate.points != points;
+  bool shouldRepaint(_SignaturePainter oldDelegate) =>
+      oldDelegate.points != points;
 }
 
 class _StarRating extends StatelessWidget {
@@ -1031,4 +1195,4 @@ class _StarRating extends StatelessWidget {
       }),
     );
   }
-} 
+}

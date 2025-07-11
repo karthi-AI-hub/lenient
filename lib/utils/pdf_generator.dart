@@ -44,7 +44,7 @@ Future<pw.Widget> buildPhotoRow(List<String> photoPaths) async {
         width: 100,
         height: 80,
         decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: PdfColors.grey300),
+          border: pw.Border.all(color: PdfColors.grey600),
         ),
         child: img != null
             ? pw.ClipRRect(child: pw.Image(img, fit: pw.BoxFit.cover))
@@ -69,7 +69,7 @@ pw.Widget buildPhotoRowWithSpacing(List<pw.ImageProvider?> images) {
           width: 100,
           height: 80,
           decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey800, width: 1),
+          border: pw.Border.all(color: PdfColors.grey600, width: 1),
           ),
           child: img != null
               ? pw.ClipRRect(child: pw.Image(img, fit: pw.BoxFit.cover))
@@ -172,7 +172,7 @@ Future<Uint8List> generateTaskReportPDF({
                   child: pw.Container(
                     margin: pw.EdgeInsets.zero,
                     child: pw.Table(
-                      border: pw.TableBorder.all(color: PdfColors.grey800, width: 1),
+                      border: pw.TableBorder.all(color: PdfColors.grey600, width: 1),
                       columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(1)},
                       children: [
                         pw.TableRow(
@@ -180,13 +180,13 @@ Future<Uint8List> generateTaskReportPDF({
                             pw.Padding(
                               padding: const pw.EdgeInsets.all(6),
                               child: pw.Center(
-                                child: pw.Text('CUSTOMER DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11)),
+                                child: pw.Text('CUSTOMER DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11, color: PdfColors.grey600)),
                               ),
                             ),
                             pw.Padding(
                               padding: const pw.EdgeInsets.all(6),
                               child: pw.Center(
-                                child: pw.Text('TASK DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11)),
+                                child: pw.Text('TASK DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11, color: PdfColors.grey600)),
                               ),
                             ),
                           ],
@@ -199,7 +199,7 @@ Future<Uint8List> generateTaskReportPDF({
                               children: [
                                  pw.Padding(
                                   padding: const pw.EdgeInsets.only(left: 16),
-                                  child: pw.Text('M/s. ${companyName.toUpperCase()}', style: pw.TextStyle(font: poppinsFont, fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                                  child: pw.Text('M/s ${companyName.toUpperCase()}', style: pw.TextStyle(font: poppinsBoldFont, fontWeight: pw.FontWeight.bold, fontSize: 9)),
                                 ),
                                 pw.Padding(
                                   padding: const pw.EdgeInsets.only(left: 16),
@@ -294,8 +294,8 @@ Future<Uint8List> generateTaskReportPDF({
                     decoration: pw.BoxDecoration(
                       color: PdfColors.white,
                       border: pw.Border(
-                        left: pw.BorderSide(color: PdfColors.grey800, width: 1),
-                        right: pw.BorderSide(color: PdfColors.grey800, width: 1),
+                        left: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                        right: pw.BorderSide(color: PdfColors.grey600, width: 1),
                         // No top border
                         // No bottom border (header)
                       ),
@@ -307,6 +307,7 @@ Future<Uint8List> generateTaskReportPDF({
                       style: pw.TextStyle(
                         font: poppinsBoldFont,
                         fontSize: 11,
+                        color: PdfColors.grey600,
                       ),
                       textAlign: pw.TextAlign.center,
                     ),
@@ -316,7 +317,13 @@ Future<Uint8List> generateTaskReportPDF({
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(horizontal: 12),
                   child: pw.Table(
-                    border: pw.TableBorder.all(color: PdfColors.grey800, width: 1),
+                    border: pw.TableBorder(
+                      top: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      left: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      right: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      bottom: pw.BorderSide.none, // Remove bottom border
+                      horizontalInside: pw.BorderSide.none, // Remove horizontal lines inside
+                    ),
                     columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(1)},
                     children: [
                       pw.TableRow(
@@ -324,13 +331,13 @@ Future<Uint8List> generateTaskReportPDF({
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
                             child: pw.Center(
-                              child: pw.Text('PROBLEM DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10)),
+                              child: pw.Text('PROBLEM DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
                             child: pw.Center(
-                              child: pw.Text('MATERIALS RECEIVED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10)),
+                              child: pw.Text('MATERIALS RECEIVED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
                           ),
                         ],
@@ -360,7 +367,13 @@ Future<Uint8List> generateTaskReportPDF({
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(horizontal: 12),
                   child: pw.Table(
-                    border: pw.TableBorder.all(color: PdfColors.grey800, width: 1),
+                    border: pw.TableBorder(
+                      top: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      left: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      right: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      bottom: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      horizontalInside: pw.BorderSide.none, // Remove horizontal lines inside
+                    ),
                     columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(1)},
                     children: [
                       pw.TableRow(
@@ -368,13 +381,13 @@ Future<Uint8List> generateTaskReportPDF({
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
                             child: pw.Center(
-                              child: pw.Text('REPORT DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10)),
+                              child: pw.Text('REPORT DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
                             child: pw.Center(
-                              child: pw.Text('MATERIALS DELIVERED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10)),
+                              child: pw.Text('MATERIALS DELIVERED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
                           ),
                         ],
@@ -401,30 +414,43 @@ Future<Uint8List> generateTaskReportPDF({
                   ),
                 ),
                 // Photos
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: pw.Center(
-                    child: pw.Text('FIELD PHOTO : BEFORE', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10)),
-                  ),
-                ),
                 pw.Container(
-                  constraints: pw.BoxConstraints(maxHeight: 90),
-                  child: pw.Padding(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 12),
-                    child: buildPhotoRowWithSpacing(beforePhotoImages),
+                  margin: const pw.EdgeInsets.symmetric(horizontal: 12),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey600, width: 1),
                   ),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: pw.Center(
-                    child: pw.Text('FIELD PHOTO : AFTER', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10)),
-                  ),
-                ),
-                pw.Container(
-                  constraints: pw.BoxConstraints(maxHeight: 90),
-                  child: pw.Padding(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 12),
-                    child: buildPhotoRowWithSpacing(afterPhotoImages),
+                  child: pw.Column(
+                    children: [
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 6),
+                        child: pw.Center(
+                          child: pw.Text('FIELD PHOTO : BEFORE', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                        ),
+                      ),
+                      pw.Container(
+                        height: 1,
+                        color: PdfColors.grey600,
+                        margin: pw.EdgeInsets.symmetric(horizontal: 0),
+                      ),
+                      buildPhotoRowWithSpacing(beforePhotoImages),
+                      pw.Container(
+                        height: 1,
+                        color: PdfColors.grey600,
+                        margin: pw.EdgeInsets.symmetric(horizontal: 0),
+                      ),
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 6),
+                        child: pw.Center(
+                          child: pw.Text('FIELD PHOTO : AFTER', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                        ),
+                      ),
+                      pw.Container(
+                        height: 1,
+                        color: PdfColors.grey600,
+                        margin: pw.EdgeInsets.symmetric(horizontal: 0),
+                      ),
+                      buildPhotoRowWithSpacing(afterPhotoImages),
+                    ],
                   ),
                 ),
                 pw.SizedBox(height: 16),
@@ -439,12 +465,12 @@ Future<Uint8List> generateTaskReportPDF({
                         padding: const pw.EdgeInsets.only(left: 8, bottom: 5),
                         margin: const pw.EdgeInsets.only(left: 16),
                         decoration: pw.BoxDecoration(
-                          border: pw.Border.all(color: PdfColors.grey800, width: 1),
+                          border: pw.Border.all(color: PdfColors.grey600, width: 1),
                         ),
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text('Terms and Condition :', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10)),
+                            pw.Text('Terms and Condition :', style: pw.TextStyle(font: poppinsFont, fontSize: 10, color: PdfColors.grey600)),
                             pw.SizedBox(height: 4),
                             pw.Text('1. Repair duration will be subjected to availability of Spares', style: pw.TextStyle(font: poppinsFont, fontSize: 9)),
                             pw.Text('2. Delivery of Repaired Materials will be against Payment', style: pw.TextStyle(font: poppinsFont, fontSize: 9)),
@@ -460,7 +486,7 @@ Future<Uint8List> generateTaskReportPDF({
                       child: pw.Container(
                         margin: const pw.EdgeInsets.only(right: 16),
                         decoration: pw.BoxDecoration(
-                          border: pw.Border.all(color: PdfColors.grey800, width: 1),
+                          border: pw.Border.all(color: PdfColors.grey600, width: 1),
                         ),
                         child: pw.Column(
                           children: [
@@ -469,58 +495,56 @@ Future<Uint8List> generateTaskReportPDF({
                               child: pw.Center(
                                 child: pw.Text(
                                   'CUSTOMER SIGNATURE',
-                                  style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10),
+                                  style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600),
                                 ),
                               ),
                             ),
                             pw.Container(
                               height: 1,
-                              color: PdfColors.grey800,
+                              color: PdfColors.grey600,
                               margin: pw.EdgeInsets.zero,
                             ),
-                            pw.Row(
-                              children: [
-                                pw.Expanded(
-                                  child: pw.Container(
-                                    height: 48,
-                                    alignment: pw.Alignment.centerLeft,
-                                    child: pw.Column(
-                                      mainAxisAlignment: pw.MainAxisAlignment.center,
-                                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                                      children: [
-                                        pw.Padding(
-                                          padding: const pw.EdgeInsets.only(left: 8),
-                                          child: pw.Text('SIGNED BY', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 9)),
-                                        ),
-                                        pw.SizedBox(height: 2),
-                                        pw.Container(
-                                          height: 1,
-                                          color: PdfColors.grey800,
-                                          margin: pw.EdgeInsets.zero,
-                                        ),
-                                        pw.Padding(
-                                          padding: const pw.EdgeInsets.only(left: 8),
-                                          child: pw.Text(customerName.toUpperCase(), style: pw.TextStyle(font: poppinsFont, fontSize: 9)),
-                                        ),
-                                      ],
+                            pw.Container(
+                              height: 47, // Slightly taller for more white space
+                              child: pw.Row(
+                                crossAxisAlignment: pw.CrossAxisAlignment.end, // Align to bottom
+                                children: [
+                                  pw.Expanded(
+                                    child: pw.Container(
+                                      alignment: pw.Alignment.bottomLeft,
+                                      padding: const pw.EdgeInsets.only(left: 8, bottom: 4),
+                                      child: pw.Column(
+                                        mainAxisSize: pw.MainAxisSize.min,
+                                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                        mainAxisAlignment: pw.MainAxisAlignment.end,
+                                        children: [
+                                          pw.Text('SIGNED BY', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                                          pw.Container(
+                                            height: 1,
+                                            width: double.infinity, // Full width
+                                            color: PdfColors.grey600,
+                                            margin: pw.EdgeInsets.symmetric(vertical: 2),
+                                          ),
+                                          pw.Text(customerName.toUpperCase(), style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                pw.Container(
-                                  width: 1,
-                                  height: 48,
-                                  color: PdfColors.grey800,
-                                ),
-                                pw.Expanded(
-                                  child: pw.Container(
-                                    height: 48,
-                                    alignment: pw.Alignment.center,
-                                    child: signatureImage.isNotEmpty
-                                        ? pw.Image(pw.MemoryImage(signatureImage))
-                                        : pw.SizedBox(),
+                                  pw.Container(
+                                    width: 1,
+                                    height: double.infinity,
+                                    color: PdfColors.grey600,
                                   ),
-                                ),
-                              ],
+                                  pw.Expanded(
+                                    child: pw.Container(
+                                      alignment: pw.Alignment.center,
+                                      child: signatureImage.isNotEmpty
+                                          ? pw.Image(pw.MemoryImage(signatureImage), height: 40, width: 80, fit: pw.BoxFit.contain)
+                                          : pw.SizedBox(height: 40, width: 80),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),

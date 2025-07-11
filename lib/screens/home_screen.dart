@@ -26,19 +26,18 @@ class HomeScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: [
-                  _FormCard(title: 'Form 1', onTap: () async {
+                  _FormCard(title: 'LTCR', onTap: () async {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => FormEntryScreen()),
+                      MaterialPageRoute(builder: (context) => FormEntryScreen(formType: 'LTCR')),
                     );
                   }),
                   const SizedBox(height: 16),
-                  _FormCard(title: 'Form 2', onTap: () async {
-                    LenientSnackbar.showWarning(context, 'Form 2 is not implemented yet');
-                  }),
-                  const SizedBox(height: 16),
-                  _FormCard(title: 'Form 3', onTap: () async {
-                    LenientSnackbar.showWarning(context, 'Form 3 is not implemented yet');
+                  _FormCard(title: 'LCCR', onTap: () async {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => FormEntryScreen(formType: 'LCCR')),
+                    );
                   }),
                 ],
               ),

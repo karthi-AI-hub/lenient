@@ -76,7 +76,7 @@ class PdfPreviewScreen extends StatelessWidget {
                   textStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => Navigator.of(context).maybePop(),
                 child: const Text('Cancel'),
               ),
             ),
