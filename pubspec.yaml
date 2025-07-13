@@ -94,8 +94,10 @@ flutter:
     - assets/email-icon.png
     - assets/address-icon.png
     # - assets/icon.png
-    - assets/lenient_header.png
-    - assets/lenient_footer.png
+    - assets/header_green.png
+    - assets/footer_green.png
+    - assets/header_blue.png
+    - assets/footer_blue.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

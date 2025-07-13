@@ -33,29 +33,29 @@ Future<pw.ImageProvider?> fileImage(String? path) async {
   }
 }
 
-Future<pw.Widget> buildPhotoRow(List<String> photoPaths) async {
-  final imgs = await Future.wait(photoPaths.take(3).map((p) => fileImage(p)));
-  return pw.Row(
-    mainAxisAlignment: pw.MainAxisAlignment.start,
-    children: List.generate(3, (i) {
-      final img = (i < imgs.length) ? imgs[i] : null;
-      return pw.Container(
-        margin: const pw.EdgeInsets.only(right: 8),
-        width: 100,
-        height: 80,
-        decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: PdfColors.grey600),
-        ),
-        child: img != null
-            ? pw.ClipRRect(child: pw.Image(img, fit: pw.BoxFit.cover))
-            : pw.Center(
-                child: pw.Text('+',
-                    style: pw.TextStyle(
-                        fontSize: 24, color: PdfColors.grey400))),
-      );
-    }),
-  );
-}
+// Future<pw.Widget> buildPhotoRow(List<String> photoPaths) async {
+//   final imgs = await Future.wait(photoPaths.take(3).map((p) => fileImage(p)));
+//   return pw.Row(
+//     mainAxisAlignment: pw.MainAxisAlignment.start,
+//     children: List.generate(3, (i) {
+//       final img = (i < imgs.length) ? imgs[i] : null;
+//       return pw.Container(
+//         margin: const pw.EdgeInsets.only(right: 8),
+//         width: 100,
+//         height: 80,
+//         decoration: pw.BoxDecoration(
+//           border: pw.Border.all(color: PdfColors.grey600),
+//         ),
+//         child: img != null
+//             ? pw.ClipRRect(child: pw.Image(img, fit: pw.BoxFit.cover))
+//             : pw.Center(
+//                 child: pw.Text('+',
+//                     style: pw.TextStyle(
+//                         fontSize: 24, color: PdfColors.grey400))),
+//       );
+//     }),
+//   );
+// }
 
 // Helper for photo row with more spacing
 pw.Widget buildPhotoRowWithSpacing(List<pw.ImageProvider?> images) {
@@ -64,17 +64,17 @@ pw.Widget buildPhotoRowWithSpacing(List<pw.ImageProvider?> images) {
     children: List.generate(3, (i) {
       final img = (i < images.length) ? images[i] : null;
       return pw.Padding(
-        padding: pw.EdgeInsets.only(right: i < 2 ? 32 : 0), // Increased spacing
+        padding: pw.EdgeInsets.only(right: i < 2 ? 32 : 0, top: 8, bottom: 8), // Add vertical padding
         child: pw.Container(
-          width: 100,
-          height: 80,
+          width: 140,
+          height: 100,
           decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: PdfColors.grey600, width: 1),
+          // border: pw.Border.all(color: PdfColors.grey600, width: 1),
           ),
           child: img != null
               ? pw.ClipRRect(child: pw.Image(img, fit: pw.BoxFit.cover))
               : pw.Center(
-                  child: pw.Text('+',
+                  child: pw.Text('',
                       style: pw.TextStyle(
                           fontSize: 24, color: PdfColors.grey400))),
         ),
@@ -102,6 +102,8 @@ Future<Uint8List> generateTaskReportPDF({
   required List<Offset?> signaturePoints,
   required Uint8List signatureImage,
   required int rating,
+  String formType = 'LTCR',
+  // required String formType,
 }) async {
   final pdf = pw.Document();
 
@@ -112,14 +114,22 @@ Future<Uint8List> generateTaskReportPDF({
   final poppinsBoldFontData = await rootBundle.load('assets/fonts/Poppins-Bold.ttf');
   final poppinsBoldFont = pw.Font.ttf(poppinsBoldFontData);
 
-  final logoBytes = await rootBundle.load('assets/lenient_header.png');
+  // Select header/footer based on formType
+  final String headerAsset = formType == 'LCCR'
+      ? 'assets/header_blue.png'
+      : 'assets/header_green.png';
+  final String footerAsset = formType == 'LCCR'
+      ? 'assets/footer_blue.png'
+      : 'assets/footer_green.png';
+  final logoBytes = await rootBundle.load(headerAsset);
   final logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
-
-  final footerBytes = await rootBundle.load('assets/lenient_footer.png');
+  final footerBytes = await rootBundle.load(footerAsset);
   final footerImage = pw.MemoryImage(footerBytes.buffer.asUint8List());
 
   final starFontData = await rootBundle.load('assets/fonts/DejaVuSans.ttf');
   final starFont = pw.Font.ttf(starFontData);
+
+  print('[PDF] formType: $formType');
 
   // final phoneIconBytes = await rootBundle.load('assets/phone-icon.png');
   // final phoneIcon = pw.MemoryImage(phoneIconBytes.buffer.asUint8List());
@@ -138,6 +148,7 @@ Future<Uint8List> generateTaskReportPDF({
     afterPhotoUrls.take(3).map((p) => fileImage(p)),
   );
 
+  // --- PAGE 1: Main content ---
   pdf.addPage(pw.Page(
     pageFormat: PdfPageFormat.a4,
     margin: pw.EdgeInsets.zero,
@@ -148,11 +159,11 @@ Future<Uint8List> generateTaskReportPDF({
           // Header image
           pw.Image(
             logo,
-            width: PdfPageFormat.a4.width - 20,
+            width: PdfPageFormat.a4.width - 10,
             fit: pw.BoxFit.fill,
-            height: 100,
+            height: 110,
           ),
-          pw.SizedBox(height: 0),
+          pw.SizedBox(height: 4),
           // Main content
           pw.Expanded(
             child: pw.Column(
@@ -165,26 +176,33 @@ Future<Uint8List> generateTaskReportPDF({
                     style: pw.TextStyle(font: poppinsBoldFont, fontSize: 14, fontWeight: pw.FontWeight.bold),
                   ),
                 ),
-                pw.SizedBox(height: 8),
+                pw.SizedBox(height: 6),
                 // Customer/Task Details Table
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(horizontal: 12),
                   child: pw.Container(
                     margin: pw.EdgeInsets.zero,
                     child: pw.Table(
-                      border: pw.TableBorder.all(color: PdfColors.grey600, width: 1),
+                      border: pw.TableBorder(
+                        top: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                        left: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                        right: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                        bottom: pw.BorderSide(color: PdfColors.grey600, width: 1.5), // Remove bottom border for consistency
+                        horizontalInside: pw.BorderSide(color: PdfColors.grey600, width: 1), // Keep horizontal line
+                        verticalInside: pw.BorderSide(color: PdfColors.grey600, width: 1), // Keep vertical line
+                      ),
                       columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(1)},
                       children: [
                         pw.TableRow(
                           children: [
                             pw.Padding(
-                              padding: const pw.EdgeInsets.all(6),
+                              padding: const pw.EdgeInsets.all(4),
                               child: pw.Center(
                                 child: pw.Text('CUSTOMER DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11, color: PdfColors.grey600)),
                               ),
                             ),
                             pw.Padding(
-                              padding: const pw.EdgeInsets.all(6),
+                              padding: const pw.EdgeInsets.all(4),
                               child: pw.Center(
                                 child: pw.Text('TASK DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11, color: PdfColors.grey600)),
                               ),
@@ -193,7 +211,7 @@ Future<Uint8List> generateTaskReportPDF({
                         ),
                         pw.TableRow(children: [
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(4),
                             child: pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
                               children: [
@@ -209,7 +227,7 @@ Future<Uint8List> generateTaskReportPDF({
                                   padding: const pw.EdgeInsets.only(left: 16),
                                   child: pw.Text(addressCity, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
                                 ),
-                                pw.SizedBox(height: 6), // Add space between address/city and phone
+                                pw.SizedBox(height: 2), // Add space between address/city and phone
                                 pw.Padding(
                                   padding: const pw.EdgeInsets.only(left: 16),
                                   child: pw.Text('Tel. : $phone', style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
@@ -218,7 +236,7 @@ Future<Uint8List> generateTaskReportPDF({
                             ),
                           ),
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(4),
                             child: pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
                               children: [
@@ -300,7 +318,7 @@ Future<Uint8List> generateTaskReportPDF({
                         // No bottom border (header)
                       ),
                     ),
-                    padding: const pw.EdgeInsets.symmetric(vertical: 6),
+                    padding: const pw.EdgeInsets.symmetric(vertical: 4),
                     alignment: pw.Alignment.center,
                     child: pw.Text(
                       'TECHNICAL NOTES',
@@ -329,13 +347,13 @@ Future<Uint8List> generateTaskReportPDF({
                       pw.TableRow(
                         children: [
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
                               child: pw.Text('PROBLEM DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
                           ),
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
                               child: pw.Text('MATERIALS RECEIVED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
@@ -379,13 +397,13 @@ Future<Uint8List> generateTaskReportPDF({
                       pw.TableRow(
                         children: [
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
                               child: pw.Text('REPORT DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
                           ),
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
                               child: pw.Text('MATERIALS DELIVERED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                             ),
@@ -422,7 +440,7 @@ Future<Uint8List> generateTaskReportPDF({
                   child: pw.Column(
                     children: [
                       pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(vertical: 6),
+                        padding: const pw.EdgeInsets.symmetric(vertical: 4),
                         child: pw.Center(
                           child: pw.Text('FIELD PHOTO : BEFORE', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                         ),
@@ -439,7 +457,7 @@ Future<Uint8List> generateTaskReportPDF({
                         margin: pw.EdgeInsets.symmetric(horizontal: 0),
                       ),
                       pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(vertical: 6),
+                        padding: const pw.EdgeInsets.symmetric(vertical: 4),
                         child: pw.Center(
                           child: pw.Text('FIELD PHOTO : AFTER', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                         ),
@@ -505,18 +523,18 @@ Future<Uint8List> generateTaskReportPDF({
                               margin: pw.EdgeInsets.zero,
                             ),
                             pw.Container(
-                              height: 47, // Slightly taller for more white space
+                              height: 48, // Slightly taller for more white space
                               child: pw.Row(
                                 crossAxisAlignment: pw.CrossAxisAlignment.end, // Align to bottom
                                 children: [
                                   pw.Expanded(
                                     child: pw.Container(
-                                      alignment: pw.Alignment.bottomLeft,
-                                      padding: const pw.EdgeInsets.only(left: 8, bottom: 4),
+                                      alignment: pw.Alignment.center,
+                                      padding: const pw.EdgeInsets.only(left: 0, bottom: 0),
                                       child: pw.Column(
                                         mainAxisSize: pw.MainAxisSize.min,
-                                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                                        mainAxisAlignment: pw.MainAxisAlignment.end,
+                                        crossAxisAlignment: pw.CrossAxisAlignment.center,
+                                        mainAxisAlignment: pw.MainAxisAlignment.center,
                                         children: [
                                           pw.Text('SIGNED BY', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
                                           pw.Container(
@@ -525,7 +543,10 @@ Future<Uint8List> generateTaskReportPDF({
                                             color: PdfColors.grey600,
                                             margin: pw.EdgeInsets.symmetric(vertical: 2),
                                           ),
-                                          pw.Text(customerName.toUpperCase(), style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                                          pw.Padding(
+                                            padding: const pw.EdgeInsets.only(top: 6),
+                                            child: pw.Text(customerName.toUpperCase(), style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -539,7 +560,7 @@ Future<Uint8List> generateTaskReportPDF({
                                     child: pw.Container(
                                       alignment: pw.Alignment.center,
                                       child: signatureImage.isNotEmpty
-                                          ? pw.Image(pw.MemoryImage(signatureImage), height: 40, width: 80, fit: pw.BoxFit.contain)
+                                          ? pw.Image(pw.MemoryImage(signatureImage), height: 40, width: 80, fit: pw.BoxFit.fill)
                                           : pw.SizedBox(height: 40, width: 80),
                                     ),
                                   ),
@@ -552,26 +573,88 @@ Future<Uint8List> generateTaskReportPDF({
                     ),
                   ],
                 ),
-                pw.SizedBox(height: 24), // Add bottom margin before footer
+                pw.SizedBox(height: 0), // Add bottom margin before footer
               ],
             ),
           ),
           // Footer image at the very bottom
- pw.Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: pw.Image(
-        footerImage,
-        width: PdfPageFormat.a4.width,
-        fit: pw.BoxFit.fitWidth,
-        height: 40,
-      ),
-    ),
+          pw.Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: pw.Image(
+              footerImage,
+              width: PdfPageFormat.a4.width,
+              fit: pw.BoxFit.fitWidth,
+              height: 40,
+            ),
+          ),
         ],
       );
     },
   ));
+
+  // --- PAGE 2: FIELD PHOTO : BEFORE (3 vertical sections, each with a centered square image) ---
+  final nonNullBeforeImages = beforePhotoImages.where((img) => img != null).toList();
+  if (nonNullBeforeImages.isNotEmpty) {
+    pdf.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(16),
+      build: (context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: List.generate(3, (i) {
+            if (i >= nonNullBeforeImages.length) {
+              return pw.Expanded(child: pw.Container());
+            }
+            return pw.Expanded(
+              child: pw.Center(
+                child: pw.Container(
+                  width: 250,
+                  height: 250,
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey600, width: 1),
+                  ),
+                  child: pw.Image(nonNullBeforeImages[i]!, fit: pw.BoxFit.cover),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    ));
+  }
+
+  // --- PAGE 3: FIELD PHOTO : AFTER (3 vertical sections, each with a centered square image) ---
+  final nonNullAfterImages = afterPhotoImages.where((img) => img != null).toList();
+  if (nonNullAfterImages.isNotEmpty) {
+    pdf.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(16),
+      build: (context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: List.generate(3, (i) {
+            if (i >= nonNullAfterImages.length) {
+              return pw.Expanded(child: pw.Container());
+            }
+            return pw.Expanded(
+              child: pw.Center(
+                child: pw.Container(
+                  width: 250,
+                  height: 250,
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey600, width: 1),
+                  ),
+                  child: pw.Image(nonNullAfterImages[i]!, fit: pw.BoxFit.cover),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    ));
+  }
 
   return pdf.save();
 }

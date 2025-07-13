@@ -55,7 +55,6 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
     'Srini',
     'Mahes',
     'Madhu',
-    'Other',
   ];
   List<File> beforePhotos = [];
   List<String> beforePhotoUrls = [];
@@ -75,20 +74,21 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
   @override
   void initState() {
     super.initState();
+    // Add listener to sanitize Task ID prefix
+    taskIdController.addListener(() {
+      if (taskIdController.text.startsWith('LCS-') || taskIdController.text.startsWith('LTS-')) {
+        final sanitized = taskIdController.text.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
+        if (taskIdController.text != sanitized) {
+          taskIdController.text = sanitized;
+          taskIdController.selection = TextSelection.collapsed(offset: sanitized.length);
+        }
+      }
+    });
     if (widget.formId != null) {
       _loadForm();
     } else {
       _loading = false;
-      // Set prefix based on formType
-      if (widget.formType == 'LTCR') {
-        if (!taskIdController.text.startsWith('LTS-')) {
-          taskIdController.text = 'LTS-';
-        }
-      } else if (widget.formType == 'LCCR') {
-        if (!taskIdController.text.startsWith('LCS-')) {
-          taskIdController.text = 'LCS-';
-        }
-      }
+      // Remove setting the controller text to 'LTS-' or 'LCS-' here, as the prefix is handled by the prefixIcon and the listener.
     }
   }
 
@@ -114,9 +114,13 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       if (formEntry != null) {
         setState(() {
           _loading = false;
-          taskIdController.text = formEntry!.taskId.startsWith('LTS-')
-              ? formEntry!.taskId.substring(4)
-              : formEntry!.taskId;
+          if (formEntry!.taskId.startsWith('LTS-')) {
+            taskIdController.text = formEntry!.taskId.substring(4);
+          } else if (formEntry!.taskId.startsWith('LCS-')) {
+            taskIdController.text = formEntry!.taskId.substring(4);
+          } else {
+          taskIdController.text = formEntry!.taskId;
+          }
           companyNameController.text = formEntry!.companyName ?? '';
           phoneController.text = formEntry!.phone ?? '';
           addressLineController.text = formEntry!.addressLine ?? '';
@@ -163,17 +167,17 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
     });
     await Future.delayed(const Duration(milliseconds: 100)); // Let UI update
     try {
-      // Ensure Task ID starts with correct prefix
-      if (widget.formType == 'LTCR' &&
-          !taskIdController.text.startsWith('LTS-')) {
-        taskIdController.text =
-            'LTS-' +
-            taskIdController.text.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
-      } else if (widget.formType == 'LCCR' &&
-          !taskIdController.text.startsWith('LCS-')) {
-        taskIdController.text =
-            'LCS-' +
-            taskIdController.text.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
+      String taskId = taskIdController.text.trim();
+      if (taskId.isEmpty) {
+        LenientSnackbar.showError(context, 'Task ID cannot be empty.');
+        setState(() => _saving = false);
+        return;
+      }
+      // Always add correct prefix
+      if (widget.formType == 'LTCR') {
+        taskId = 'LTS-' + taskId.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
+      } else if (widget.formType == 'LCCR') {
+        taskId = 'LCS-' + taskId.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
       }
       // Track removed images
       final removedBeforeUrls = <String>[];
@@ -190,7 +194,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       // debugPrint('Removed after image URLs: $removedAfterUrls');
       final form = FormModel(
         id: formEntry?.id ?? const Uuid().v4(),
-        taskId: taskIdController.text,
+        taskId: taskId,
         formType: widget.formType ?? 'LTCR', // Store as 'LTCR' or 'LCCR'
         companyName: companyNameController.text,
         phone: phoneController.text,
@@ -267,7 +271,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 if (await PermissionManager.ensureCameraAndGalleryPermissions(
                   context,
                 )) {
-                  _pickImage(photoList, ImageSource.camera);
+                _pickImage(photoList, ImageSource.camera);
                 }
               },
             ),
@@ -279,7 +283,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 if (await PermissionManager.ensureCameraAndGalleryPermissions(
                   context,
                 )) {
-                  _pickImage(photoList, ImageSource.gallery);
+                _pickImage(photoList, ImageSource.gallery);
                 }
               },
             ),
@@ -481,7 +485,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     prefixIcon: Padding(
                       padding: const EdgeInsets.only(left: 8, right: 0),
                       child: Text(
-                        'LTS-',
+                        widget.formType == 'LCCR' ? 'LCS-' : 'LTS-',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 16,
@@ -550,45 +554,105 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                       context: context,
                       builder: (context) {
                         List<String> tempSelected = List<String>.from(
-                          reportedBy,
+                          reportedBy.where((name) => reportedByOptions.contains(name)),
                         );
+                        String otherName = '';
+                        // If previously selected, try to extract the custom name
+                        for (final name in reportedBy) {
+                          if (!reportedByOptions.contains(name)) {
+                            otherName = name;
+                            break;
+                          }
+                        }
                         return StatefulBuilder(
                           builder: (context, setStateDialog) {
                             return AlertDialog(
                               title: Text('Select Reported By'),
                               content: SingleChildScrollView(
                                 child: Column(
-                                  children: reportedByOptions.map((name) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 0,
-                                      ), // Remove extra vertical space
-                                      child: CheckboxListTile(
-                                        value: tempSelected.contains(name),
-                                        title: Text(name),
-                                        contentPadding: EdgeInsets
-                                            .zero, // Remove left/right padding
-                                        dense: true, // Reduce height
-                                        visualDensity: VisualDensity
-                                            .compact, // Make even more compact
-                                        onChanged: (checked) {
+                                  children: [
+                                    ...reportedByOptions.map((name) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 0),
+                                        child: CheckboxListTile(
+                                          value: tempSelected.contains(name),
+                                          title: Text(name),
+                                          contentPadding: EdgeInsets.zero,
+                                          dense: true,
+                                          visualDensity: VisualDensity.compact,
+                                          onChanged: (checked) {
+                                            setStateDialog(() {
+                                              if (checked == true) {
+                                                tempSelected.add(name);
+                                              } else {
+                                                tempSelected.remove(name);
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 16.0, left: 0, right: 0, bottom: 0),
+                                      child: TextField(
+                                        autofocus: false,
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 16,
+                                          color: Colors.black,
+                                        ),
+                                        decoration: InputDecoration(
+                                          labelText: 'Other (enter name)',
+                                          labelStyle: const TextStyle(
+                                            fontFamily: 'Poppins',
+                                            color: Colors.grey,
+                                            fontSize: 15,
+                                          ),
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                                          ),
+                                        ),
+                                        onChanged: (val) {
                                           setStateDialog(() {
-                                            if (checked == true) {
-                                              tempSelected.add(name);
-                                            } else {
-                                              tempSelected.remove(name);
-                                            }
+                                            otherName = val;
                                           });
                                         },
+                                        controller: TextEditingController.fromValue(
+                                          TextEditingValue(
+                                            text: otherName,
+                                            selection: TextSelection.collapsed(offset: otherName.length),
+                                          ),
+                                        ),
                                       ),
-                                    );
-                                  }).toList(),
+                                    ),
+                                  ],
                                 ),
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, tempSelected),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    minimumSize: Size(0, 0),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: () {
+                                    final result = List<String>.from(tempSelected);
+                                    if (otherName.trim().isNotEmpty) {
+                                      result.add(otherName.trim());
+                                    }
+                                    Navigator.pop(context, result);
+                                  },
                                   child: Text('OK'),
                                 ),
                               ],
@@ -676,7 +740,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     child: signaturePreview != null
                         ? Image.memory(signaturePreview!, height: 64)
                         : (signatureUrl != null
-                              ? Image.network(signatureUrl!, height: 64)
+                            ? Image.network(signatureUrl!, height: 64)
                               : const Text(
                                   'Tap to sign',
                                   style: TextStyle(color: Colors.grey),
@@ -848,26 +912,26 @@ class _FormTextField extends StatelessWidget {
         decoration:
             decoration ??
             InputDecoration(
-              hintText: hint,
+          hintText: hint,
               hintStyle: const TextStyle(
                 fontFamily: 'Poppins',
                 color: Colors.grey,
               ),
-              filled: true,
-              fillColor: Colors.white,
+          filled: true,
+          fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-            ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          ),
+        ),
         onSaved: onSaved,
         validator: validator,
         initialValue: controller == null ? initialValue : null,
@@ -1195,4 +1259,4 @@ class _StarRating extends StatelessWidget {
       }),
     );
   }
-}
+} 

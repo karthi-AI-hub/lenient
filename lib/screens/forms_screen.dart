@@ -502,6 +502,7 @@ class _FormsScreenState extends State<FormsScreen> {
                                     form.signatureUrl,
                                   ),
                                   rating: form.rating ?? 0,
+                                  formType: form.formType ?? 'LTCR',
                                 );
                                 Navigator.of(
                                   context,
