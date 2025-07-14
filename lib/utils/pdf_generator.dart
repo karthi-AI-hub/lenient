@@ -151,19 +151,22 @@ Future<Uint8List> generateTaskReportPDF({
   // --- PAGE 1: Main content ---
   pdf.addPage(pw.Page(
     pageFormat: PdfPageFormat.a4,
-    margin: pw.EdgeInsets.zero,
+    margin: pw.EdgeInsets.only(left: 10, right: 10), // Add left margin to entire page
     build: (context) {
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
           // Header image
-          pw.Image(
-            logo,
-            width: PdfPageFormat.a4.width - 10,
-            fit: pw.BoxFit.fill,
-            height: 110,
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(left: 0, right: 0),
+            child: pw.Image(
+              logo,
+              width: PdfPageFormat.a4.width - 20,
+              fit: pw.BoxFit.fill,
+              height: 90,
+            ),
           ),
-          pw.SizedBox(height: 4),
+          pw.SizedBox(height: 12),
           // Main content
           pw.Expanded(
             child: pw.Column(
@@ -173,7 +176,7 @@ Future<Uint8List> generateTaskReportPDF({
                 pw.Center(
                   child: pw.Text(
                     'TASK REPORT',
-                    style: pw.TextStyle(font: poppinsBoldFont, fontSize: 14, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(font: poppinsBoldFont, fontSize: 12, color: PdfColors.grey800),
                   ),
                 ),
                 pw.SizedBox(height: 6),
@@ -184,12 +187,12 @@ Future<Uint8List> generateTaskReportPDF({
                     margin: pw.EdgeInsets.zero,
                     child: pw.Table(
                       border: pw.TableBorder(
-                        top: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                        left: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                        right: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                        bottom: pw.BorderSide(color: PdfColors.grey600, width: 1.5), // Remove bottom border for consistency
-                        horizontalInside: pw.BorderSide(color: PdfColors.grey600, width: 1), // Keep horizontal line
-                        verticalInside: pw.BorderSide(color: PdfColors.grey600, width: 1), // Keep vertical line
+                        top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                        left: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                        right: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                        // bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.7), // was 1.5 or 1
+                        horizontalInside: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                        verticalInside: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
                       ),
                       columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(1)},
                       children: [
@@ -198,13 +201,13 @@ Future<Uint8List> generateTaskReportPDF({
                             pw.Padding(
                               padding: const pw.EdgeInsets.all(4),
                               child: pw.Center(
-                                child: pw.Text('CUSTOMER DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11, color: PdfColors.grey600)),
+                                child: pw.Text('CUSTOMER DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey700)),
                               ),
                             ),
                             pw.Padding(
                               padding: const pw.EdgeInsets.all(4),
                               child: pw.Center(
-                                child: pw.Text('TASK DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 11, color: PdfColors.grey600)),
+                                child: pw.Text('TASK DETAILS', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey700)),
                               ),
                             ),
                           ],
@@ -296,6 +299,8 @@ Future<Uint8List> generateTaskReportPDF({
                                     child: pw.Text('★' * rating, style: pw.TextStyle(font: starFont, fontSize: 10)),
                                   ),
                                 ]),
+                                // Add vertical space after Rating row
+                                pw.SizedBox(height: 8),
                               ],
                             ),
                           ),
@@ -312,8 +317,9 @@ Future<Uint8List> generateTaskReportPDF({
                     decoration: pw.BoxDecoration(
                       color: PdfColors.white,
                       border: pw.Border(
-                        left: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                        right: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                        left: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                        right: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                        top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
                         // No top border
                         // No bottom border (header)
                       ),
@@ -324,8 +330,8 @@ Future<Uint8List> generateTaskReportPDF({
                       'TECHNICAL NOTES',
                       style: pw.TextStyle(
                         font: poppinsBoldFont,
-                        fontSize: 11,
-                        color: PdfColors.grey600,
+                        fontSize: 10,
+                        color: PdfColors.grey700,
                       ),
                       textAlign: pw.TextAlign.center,
                     ),
@@ -336,9 +342,9 @@ Future<Uint8List> generateTaskReportPDF({
                   padding: const pw.EdgeInsets.symmetric(horizontal: 12),
                   child: pw.Table(
                     border: pw.TableBorder(
-                      top: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                      left: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                      right: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                      left: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                      right: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
                       bottom: pw.BorderSide.none, // Remove bottom border
                       horizontalInside: pw.BorderSide.none, // Remove horizontal lines inside
                     ),
@@ -349,13 +355,13 @@ Future<Uint8List> generateTaskReportPDF({
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
-                              child: pw.Text('PROBLEM DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                              child: pw.Text('PROBLEM DESCRIPTION', style: pw.TextStyle(font: poppinsFont, fontSize: 10, color: PdfColors.grey800)),
                             ),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
-                              child: pw.Text('MATERIALS RECEIVED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                              child: pw.Text('MATERIALS RECEIVED', style: pw.TextStyle(font: poppinsFont, fontSize: 10, color: PdfColors.grey800)),
                             ),
                           ),
                         ],
@@ -366,7 +372,10 @@ Future<Uint8List> generateTaskReportPDF({
                           child: pw.Container(
                             constraints: pw.BoxConstraints(minHeight: 60),
                             alignment: pw.Alignment.topLeft,
-                            child: pw.Text(problemDescription, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            child: pw.Padding(
+                              padding: const pw.EdgeInsets.only(left: 16),
+                              child: pw.Text(problemDescription, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            ),
                           ),
                         ),
                         pw.Padding(
@@ -374,7 +383,10 @@ Future<Uint8List> generateTaskReportPDF({
                           child: pw.Container(
                             constraints: pw.BoxConstraints(minHeight: 60),
                             alignment: pw.Alignment.topLeft,
-                            child: pw.Text(materialsReceived, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            child: pw.Padding(
+                              padding: const pw.EdgeInsets.only(left: 16),
+                              child: pw.Text(materialsReceived, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            ),
                           ),
                         ),
                       ]),
@@ -386,10 +398,10 @@ Future<Uint8List> generateTaskReportPDF({
                   padding: const pw.EdgeInsets.symmetric(horizontal: 12),
                   child: pw.Table(
                     border: pw.TableBorder(
-                      top: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                      left: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                      right: pw.BorderSide(color: PdfColors.grey600, width: 1),
-                      bottom: pw.BorderSide(color: PdfColors.grey600, width: 1),
+                      top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                      left: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                      right: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                      bottom: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
                       horizontalInside: pw.BorderSide.none, // Remove horizontal lines inside
                     ),
                     columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(1)},
@@ -399,13 +411,13 @@ Future<Uint8List> generateTaskReportPDF({
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
-                              child: pw.Text('REPORT DESCRIPTION', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                              child: pw.Text('REPORT DESCRIPTION', style: pw.TextStyle(font: poppinsFont, fontSize: 10, color: PdfColors.grey800)),
                             ),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(0),
                             child: pw.Center(
-                              child: pw.Text('MATERIALS DELIVERED', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                              child: pw.Text('MATERIALS DELIVERED', style: pw.TextStyle(font: poppinsFont, fontSize: 10, color: PdfColors.grey800)),
                             ),
                           ),
                         ],
@@ -416,7 +428,10 @@ Future<Uint8List> generateTaskReportPDF({
                           child: pw.Container(
                             constraints: pw.BoxConstraints(minHeight: 60),
                             alignment: pw.Alignment.topLeft,
-                            child: pw.Text(reportDescription, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            child: pw.Padding(
+                              padding: const pw.EdgeInsets.only(left: 16),
+                              child: pw.Text(reportDescription, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            ),
                           ),
                         ),
                         pw.Padding(
@@ -424,7 +439,10 @@ Future<Uint8List> generateTaskReportPDF({
                           child: pw.Container(
                             constraints: pw.BoxConstraints(minHeight: 60),
                             alignment: pw.Alignment.topLeft,
-                            child: pw.Text(materialsDelivered, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            child: pw.Padding(
+                              padding: const pw.EdgeInsets.only(left: 16),
+                              child: pw.Text(materialsDelivered, style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                            ),
                           ),
                         ),
                       ]),
@@ -435,43 +453,58 @@ Future<Uint8List> generateTaskReportPDF({
                 pw.Container(
                   margin: const pw.EdgeInsets.symmetric(horizontal: 12),
                   decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey600, width: 1),
+                    border: pw.Border.all(color: PdfColors.grey600, width: 0.7),
                   ),
                   child: pw.Column(
                     children: [
                       pw.Container(
                         padding: const pw.EdgeInsets.symmetric(vertical: 4),
                         child: pw.Center(
-                          child: pw.Text('FIELD PHOTO : BEFORE', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                          child: pw.Text('FIELD PHOTO : BEFORE', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey700)),
                         ),
                       ),
+                      // Unified horizontal line (above photos)
                       pw.Container(
-                        height: 1,
-                        color: PdfColors.grey600,
-                        margin: pw.EdgeInsets.symmetric(horizontal: 0),
+                        decoration: pw.BoxDecoration(
+                          border: pw.Border(
+                            top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                          ),
+                        ),
+                        height: 0.7,
+                        width: double.infinity,
                       ),
                       buildPhotoRowWithSpacing(beforePhotoImages),
+                      // Unified horizontal line (between before/after)
                       pw.Container(
-                        height: 1,
-                        color: PdfColors.grey600,
-                        margin: pw.EdgeInsets.symmetric(horizontal: 0),
+                        decoration: pw.BoxDecoration(
+                          border: pw.Border(
+                            top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                          ),
+                        ),
+                        height: 0.7,
+                        width: double.infinity,
                       ),
                       pw.Container(
                         padding: const pw.EdgeInsets.symmetric(vertical: 4),
                         child: pw.Center(
-                          child: pw.Text('FIELD PHOTO : AFTER', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                          child: pw.Text('FIELD PHOTO : AFTER', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey700)),
                         ),
                       ),
+                      // Unified horizontal line (above after photos)
                       pw.Container(
-                        height: 1,
-                        color: PdfColors.grey600,
-                        margin: pw.EdgeInsets.symmetric(horizontal: 0),
+                        decoration: pw.BoxDecoration(
+                          border: pw.Border(
+                            top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                          ),
+                        ),
+                        height: 0.7,
+                        width: double.infinity,
                       ),
                       buildPhotoRowWithSpacing(afterPhotoImages),
                     ],
                   ),
                 ),
-                pw.SizedBox(height: 16),
+                // pw.SizedBox(height: 16),
                 // Terms and Signature (center split)
                 pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -481,15 +514,15 @@ Future<Uint8List> generateTaskReportPDF({
                       flex: 1,
                       child: pw.Container(
                         padding: const pw.EdgeInsets.only(left: 8, bottom: 5),
-                        margin: const pw.EdgeInsets.only(left: 16),
+                        margin: const pw.EdgeInsets.only(left: 12),
                         decoration: pw.BoxDecoration(
-                          border: pw.Border.all(color: PdfColors.grey600, width: 1),
+                          border: pw.Border.all(color: PdfColors.grey600, width: 0.7),
                         ),
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text('Terms and Condition :', style: pw.TextStyle(font: poppinsFont, fontSize: 10, color: PdfColors.grey600)),
-                            pw.SizedBox(height: 4),
+                            pw.Text('Terms and Condition :', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 9, color: PdfColors.grey800)),
+                            pw.SizedBox(height: 2),
                             pw.Text('1. Repair duration will be subjected to availability of Spares', style: pw.TextStyle(font: poppinsFont, fontSize: 9)),
                             pw.Text('2. Delivery of Repaired Materials will be against Payment', style: pw.TextStyle(font: poppinsFont, fontSize: 9)),
                             pw.Text('3. Diagnosis Charges will be applicable', style: pw.TextStyle(font: poppinsFont, fontSize: 9)),
@@ -502,14 +535,14 @@ Future<Uint8List> generateTaskReportPDF({
                     pw.Expanded(
                       flex: 1,
                       child: pw.Container(
-                        margin: const pw.EdgeInsets.only(right: 16),
+                        margin: const pw.EdgeInsets.only(right: 12),
                         decoration: pw.BoxDecoration(
-                          border: pw.Border.all(color: PdfColors.grey600, width: 1),
+                          border: pw.Border.all(color: PdfColors.grey600, width: 0.7),
                         ),
                         child: pw.Column(
                           children: [
                             pw.Padding(
-                              padding: const pw.EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 2),
+                              padding: const pw.EdgeInsets.only(top: 4, left: 8, right: 8, bottom: 4),
                               child: pw.Center(
                                 child: pw.Text(
                                   'CUSTOMER SIGNATURE',
@@ -517,42 +550,61 @@ Future<Uint8List> generateTaskReportPDF({
                                 ),
                               ),
                             ),
+                            // Signature section horizontal line
                             pw.Container(
-                              height: 1,
-                              color: PdfColors.grey600,
-                              margin: pw.EdgeInsets.zero,
+                              decoration: pw.BoxDecoration(
+                                border: pw.Border(
+                                  top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                                ),
+                              ),
+                              height: 0.7,
+                              width: double.infinity,
                             ),
                             pw.Container(
-                              height: 48, // Slightly taller for more white space
+                              height: 47, // Slightly taller for more white space
                               child: pw.Row(
                                 crossAxisAlignment: pw.CrossAxisAlignment.end, // Align to bottom
                                 children: [
                                   pw.Expanded(
                                     child: pw.Container(
                                       alignment: pw.Alignment.center,
-                                      padding: const pw.EdgeInsets.only(left: 0, bottom: 0),
-                                      child: pw.Column(
-                                        mainAxisSize: pw.MainAxisSize.min,
-                                        crossAxisAlignment: pw.CrossAxisAlignment.center,
-                                        mainAxisAlignment: pw.MainAxisAlignment.center,
-                                        children: [
-                                          pw.Text('SIGNED BY', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
-                                          pw.Container(
-                                            height: 1,
-                                            width: double.infinity, // Full width
-                                            color: PdfColors.grey600,
-                                            margin: pw.EdgeInsets.symmetric(vertical: 2),
-                                          ),
-                                          pw.Padding(
-                                            padding: const pw.EdgeInsets.only(top: 6),
-                                            child: pw.Text(customerName.toUpperCase(), style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
-                                          ),
-                                        ],
+                                      padding: const pw.EdgeInsets.only(bottom: 0), // Remove left margin so underline touches border
+                                      decoration: pw.BoxDecoration(
+                                        border: pw.Border(
+                                          // right: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                                        ),
+                                      ),
+                                      height: 47, // Match signature block height
+                                      child: pw.Center(
+                                        child: pw.Column(
+                                          mainAxisSize: pw.MainAxisSize.min,
+                                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                          children: [
+                                            pw.Padding(
+                                              padding: const pw.EdgeInsets.only(left: 8, bottom: 6),
+                                              child: pw.Text('SIGNED BY', style: pw.TextStyle(font: poppinsBoldFont, fontSize: 10, color: PdfColors.grey600)),
+                                            ),
+                                            pw.Container(
+                                              decoration: pw.BoxDecoration(
+                                                border: pw.Border(
+                                                  top: pw.BorderSide(color: PdfColors.grey600, width: 0.7),
+                                                ),
+                                              ),
+                                              height: 0.7,
+                                              width: double.infinity,
+                                            ),
+                                            pw.Padding(
+                                              padding: const pw.EdgeInsets.only(left: 8, top: 4),
+                                              child: pw.Text(customerName.toUpperCase(), style: pw.TextStyle(font: poppinsFont, fontSize: 10)),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
+                                  // Signature section vertical divider
                                   pw.Container(
-                                    width: 1,
+                                    width: 0.7,
                                     height: double.infinity,
                                     color: PdfColors.grey600,
                                   ),
@@ -584,7 +636,7 @@ Future<Uint8List> generateTaskReportPDF({
             bottom: 0,
             child: pw.Image(
               footerImage,
-              width: PdfPageFormat.a4.width,
+              width: PdfPageFormat.a4.width - 20,
               fit: pw.BoxFit.fitWidth,
               height: 40,
             ),
@@ -613,7 +665,7 @@ Future<Uint8List> generateTaskReportPDF({
                   width: 250,
                   height: 250,
                   decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey600, width: 1),
+                    border: pw.Border.all(color: PdfColors.grey600, width: 0.7),
                   ),
                   child: pw.Image(nonNullBeforeImages[i]!, fit: pw.BoxFit.cover),
                 ),
@@ -644,7 +696,7 @@ Future<Uint8List> generateTaskReportPDF({
                   width: 250,
                   height: 250,
                   decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey600, width: 1),
+                    border: pw.Border.all(color: PdfColors.grey600, width: 0.7),
                   ),
                   child: pw.Image(nonNullAfterImages[i]!, fit: pw.BoxFit.cover),
                 ),
