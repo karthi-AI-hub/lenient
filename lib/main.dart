@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/forms_screen.dart';
+import 'screens/change_password_screen.dart';
 import 'widgets/lenient_app_bar.dart';
 import 'widgets/lenient_nav_bar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,7 +11,12 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'utils/permission_manager.dart';
-
+import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'config/build_flags.dart';
+import 'services/database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,7 +90,248 @@ class _PermissionGateState extends State<PermissionGate> {
         ),
       );
     }
-    return const LenientTechnologiesApp();
+    return const AppStartGuard(child: LenientTechnologiesApp());
+  }
+}
+
+// --- AppStartGuard for password version enforcement ---
+class AppStartGuard extends StatefulWidget {
+  final Widget child;
+  const AppStartGuard({required this.child, Key? key}) : super(key: key);
+
+  @override
+  State<AppStartGuard> createState() => _AppStartGuardState();
+}
+
+class _AppStartGuardState extends State<AppStartGuard> {
+  bool? _authenticated;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPasswordVersion();
+  }
+
+  Future<void> _checkPasswordVersion() async {
+    try {
+      // Check if local password/version exists
+      final local = await getLocalPasswordAndVersion();
+      if (local == null) {
+        // No local password, require Supabase validation
+        setState(() {
+          _authenticated = false;
+        });
+        return;
+      }
+      final localVersion = int.tryParse(local['password_version'] ?? '');
+      final supaVersion = await getSupabasePasswordVersion();
+      final prefs = await SharedPreferences.getInstance();
+      final storedVersion = prefs.getInt('stored_password_version');
+      if (supaVersion != null && localVersion != null && localVersion == supaVersion && storedVersion == localVersion) {
+        setState(() {
+          _authenticated = true;
+        });
+      } else {
+        setState(() {
+          _authenticated = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _authenticated = false;
+      });
+    }
+  }
+
+  void _onAuthenticated() async {
+    final local = await getLocalPasswordAndVersion();
+    final currentVersion = int.tryParse(local?['password_version'] ?? '');
+    if (currentVersion != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('stored_password_version', currentVersion);
+    }
+    setState(() {
+      _authenticated = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_authenticated == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_authenticated == true) {
+      return widget.child;
+    }
+    return AppLockScreen(onAuthenticated: _onAuthenticated);
+  }
+}
+
+class AppLockScreen extends StatefulWidget {
+  final VoidCallback onAuthenticated;
+  const AppLockScreen({required this.onAuthenticated, Key? key}) : super(key: key);
+
+  @override
+  State<AppLockScreen> createState() => _AppLockScreenState();
+}
+
+class _AppLockScreenState extends State<AppLockScreen> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  Future<bool> validatePassword(String input) async {
+    final local = await getLocalPasswordAndVersion();
+    if (local == null) {
+      // No local password, validate against Supabase
+      final isValid = await validatePasswordWithSupabase(input);
+      if (isValid) {
+        // If correct, store hash and version locally
+        final supa = await fetchPasswordFromSupabase();
+        if (supa != null) {
+          await storePasswordLocally(supa['password_hash'], supa['password_version']);
+        }
+        return true;
+      } else {
+        setState(() {
+          _error = "Incorrect password (Supabase check)";
+        });
+        return false;
+      }
+    }
+    // Local password exists, check version sync
+    final localVersion = int.tryParse(local['password_version'] ?? '');
+    final supaVersion = await getSupabasePasswordVersion();
+    if (supaVersion != null && localVersion != null && localVersion != supaVersion) {
+      // Version mismatch, require Supabase validation
+      final isValid = await validatePasswordWithSupabase(input);
+      if (isValid) {
+        final supa = await fetchPasswordFromSupabase();
+        if (supa != null) {
+          await storePasswordLocally(supa['password_hash'], supa['password_version']);
+        }
+        return true;
+      } else {
+        setState(() {
+          _error = "Incorrect password (Supabase check)";
+        });
+        return false;
+      }
+    }
+    // Local password and version are valid, check locally
+    final storedHash = local['password_hash'];
+    final inputHash = sha256.convert(utf8.encode(input)).toString();
+    if (inputHash == storedHash) {
+      return true;
+    } else {
+      setState(() {
+        _error = "Incorrect password";
+      });
+      return false;
+    }
+  }
+
+  void _submit() async {
+    bool isValid = await validatePassword(_controller.text);
+    if (isValid) {
+      setState(() => _error = null);
+      widget.onAuthenticated();
+    } else {
+      setState(() => _error = "Incorrect password");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.07),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  "App Locked",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 22,
+                    color: Color(0xFF22B14C),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Enter App Password",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    color: Color(0xFF222222),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _controller,
+                  obscureText: true,
+                  style: const TextStyle(fontFamily: 'Poppins', fontSize: 18),
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    labelStyle: const TextStyle(fontFamily: 'Poppins'),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onSubmitted: (_) => _submit(),
+                  textInputAction: TextInputAction.done,
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF22B14C),
+                      foregroundColor: Colors.white,
+                      textStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _submit,
+                    child: const Text("Unlock"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -260,10 +507,11 @@ Future<void> clearAppCache() async {
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    FormsScreen(),
-  ];
+  List<Widget> get _screens => [
+        const HomeScreen(),
+        const FormsScreen(),
+        if (isAdminBuild) const ChangePasswordScreen(),
+      ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -282,10 +530,13 @@ class _MainScaffoldState extends State<MainScaffold> {
       bottomNavigationBar: LenientNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        isAdmin: isAdminBuild,
       ),
     );
   }
 }
+
+
 
 class PlaceholderScreen extends StatelessWidget {
   final String title;
