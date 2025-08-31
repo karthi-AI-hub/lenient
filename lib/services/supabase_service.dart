@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
+// import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image/image.dart' as img;
 import '../models/form_model.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/rendering.dart';
+// import 'package:flutter/rendering.dart';
 import 'package:uuid/uuid.dart';
 
 class SupabaseService {
@@ -128,23 +128,23 @@ class SupabaseService {
         .map((data) => data.map((e) => FormModel.fromMap(e)).toList());
   }
 
-  static Future<void> _deleteFolderAndContents(String bucket, String folder) async {
-    try {
-      final response = await _client.storage.from(bucket).list(path: folder);
-      final files = response
-        .where((item) => item.name.isNotEmpty)
-        .map((item) => '$folder/${item.name}')
-        .toList();
-      if (files.isNotEmpty) {
-        await _client.storage.from(bucket).remove(files);
-      }
-      // Try to remove the folder itself (may be a no-op)
-      await _client.storage.from(bucket).remove([folder]);
-      // debugPrint('Deleted folder and contents: $bucket/$folder');
-    } catch (e) {
-      debugPrint('Failed to delete folder $bucket/$folder: $e');
-    }
-  }
+  // static Future<void> _deleteFolderAndContents(String bucket, String folder) async {
+  //   try {
+  //     final response = await _client.storage.from(bucket).list(path: folder);
+  //     final files = response
+  //       .where((item) => item.name.isNotEmpty)
+  //       .map((item) => '$folder/${item.name}')
+  //       .toList();
+  //     if (files.isNotEmpty) {
+  //       await _client.storage.from(bucket).remove(files);
+  //     }
+  //     // Try to remove the folder itself (may be a no-op)
+  //     await _client.storage.from(bucket).remove([folder]);
+  //     // debugPrint('Deleted folder and contents: $bucket/$folder');
+  //   } catch (e) {
+  //     debugPrint('Failed to delete folder $bucket/$folder: $e');
+  //   }
+  // }
 
   static Future<void> deleteForm(String id, List<String> imageUrls, String? signatureUrl, {String? taskId}) async {
     // Delete all individual images (legacy, for safety)

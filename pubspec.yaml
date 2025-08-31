@@ -39,6 +39,7 @@ dependencies:
   sqflite: ^2.3.0
   shared_preferences: ^2.2.2
   crypto: ^3.0.3
+  flutter_dotenv: ^5.0.2
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -101,6 +102,7 @@ flutter:
     - assets/footer_green.png
     - assets/header_blue.png
     - assets/footer_blue.png
+    - .env
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

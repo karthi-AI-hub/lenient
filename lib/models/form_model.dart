@@ -19,6 +19,7 @@ class FormModel {
   final String? signatureUrl;
   final List<String>? beforePhotoUrls;
   final List<String>? afterPhotoUrls;
+  final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -40,6 +41,7 @@ class FormModel {
     this.signatureUrl,
     this.beforePhotoUrls,
     this.afterPhotoUrls,
+    this.status = "Ongoing",
     required this.createdAt,
     required this.updatedAt,
   });
@@ -63,6 +65,7 @@ class FormModel {
       signatureUrl: map['signature_url'] as String?,
       beforePhotoUrls: (map['before_photo_urls'] as List<dynamic>?)?.cast<String>(),
       afterPhotoUrls: (map['after_photo_urls'] as List<dynamic>?)?.cast<String>(),
+      status: map['status'] as String? ?? "Ongoing",
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -87,6 +90,7 @@ class FormModel {
       'signature_url': signatureUrl,
       'before_photo_urls': beforePhotoUrls,
       'after_photo_urls': afterPhotoUrls,
+      'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -110,6 +114,7 @@ class FormModel {
     String? signatureUrl,
     List<String>? beforePhotoUrls,
     List<String>? afterPhotoUrls,
+    String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -131,6 +136,7 @@ class FormModel {
       signatureUrl: signatureUrl ?? this.signatureUrl,
       beforePhotoUrls: beforePhotoUrls ?? this.beforePhotoUrls,
       afterPhotoUrls: afterPhotoUrls ?? this.afterPhotoUrls,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -143,6 +149,7 @@ class FormModel {
       taskId: '',
       formType: '',
       companyName: '',
+      status: 'Ongoing',
       createdAt: now,
       updatedAt: now,
     );

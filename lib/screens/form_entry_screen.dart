@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../widgets/lenient_app_bar.dart';
+// import '../widgets/lenient_app_bar.dart';
 import '../utils/pdf_generator.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -11,11 +11,9 @@ import '../services/supabase_service.dart';
 import '../utils/lenient_snackbar.dart';
 import '../utils/lenient_dialog.dart';
 import 'package:uuid/uuid.dart';
-import 'pdf_preview_screen.dart';
-import 'package:path_provider/path_provider.dart';
-
-// import 'package:permission_handler/permission_handler.dart';
-import 'dart:io' show Platform;
+// import 'pdf_preview_screen.dart';
+// import 'package:path_provider/path_provider.dart';
+// import 'dart:io' show Platform;
 import '../utils/permission_manager.dart';
 
 class FormEntryScreen extends StatefulWidget {
@@ -44,6 +42,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       TextEditingController();
   final TextEditingController customerNameController = TextEditingController();
   List<String> reportedBy = [];
+  bool statusCompleted = false;
   final List<String> reportedByOptions = [
     'Durai',
     'Elango',
@@ -76,11 +75,17 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
     super.initState();
     // Add listener to sanitize Task ID prefix
     taskIdController.addListener(() {
-      if (taskIdController.text.startsWith('LCS-') || taskIdController.text.startsWith('LTS-')) {
-        final sanitized = taskIdController.text.replaceFirst(RegExp(r'^(LCS-|LTS-)'), '');
+      if (taskIdController.text.startsWith('LCS-') ||
+          taskIdController.text.startsWith('LTS-')) {
+        final sanitized = taskIdController.text.replaceFirst(
+          RegExp(r'^(LCS-|LTS-)'),
+          '',
+        );
         if (taskIdController.text != sanitized) {
           taskIdController.text = sanitized;
-          taskIdController.selection = TextSelection.collapsed(offset: sanitized.length);
+          taskIdController.selection = TextSelection.collapsed(
+            offset: sanitized.length,
+          );
         }
       }
     });
@@ -88,7 +93,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
       _loadForm();
     } else {
       _loading = false;
-      // Remove setting the controller text to 'LTS-' or 'LCS-' here, as the prefix is handled by the prefixIcon and the listener.
+      statusCompleted = false;
     }
   }
 
@@ -119,7 +124,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
           } else if (formEntry!.taskId.startsWith('LCS-')) {
             taskIdController.text = formEntry!.taskId.substring(4);
           } else {
-          taskIdController.text = formEntry!.taskId;
+            taskIdController.text = formEntry!.taskId;
           }
           companyNameController.text = formEntry!.companyName ?? '';
           phoneController.text = formEntry!.phone ?? '';
@@ -142,6 +147,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
           afterPhotoUrls = (formEntry!.afterPhotoUrls ?? []);
           rating = formEntry!.rating ?? 0;
           signatureUrl = formEntry!.signatureUrl;
+          statusCompleted = (formEntry!.status == "Completed");
           createdAt = formEntry!.createdAt;
           updatedAt = formEntry!.updatedAt;
         });
@@ -210,6 +216,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
         signatureUrl: formEntry?.signatureUrl,
         beforePhotoUrls: beforePhotoUrls,
         afterPhotoUrls: afterPhotoUrls,
+        status: statusCompleted ? "Completed" : "Ongoing",
         createdAt: formEntry?.createdAt ?? DateTime.now().toUtc(),
         updatedAt: DateTime.now().toUtc(),
       );
@@ -271,7 +278,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 if (await PermissionManager.ensureCameraAndGalleryPermissions(
                   context,
                 )) {
-                _pickImage(photoList, ImageSource.camera);
+                  _pickImage(photoList, ImageSource.camera);
                 }
               },
             ),
@@ -283,7 +290,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 if (await PermissionManager.ensureCameraAndGalleryPermissions(
                   context,
                 )) {
-                _pickImage(photoList, ImageSource.gallery);
+                  _pickImage(photoList, ImageSource.gallery);
                 }
               },
             ),
@@ -554,7 +561,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                       context: context,
                       builder: (context) {
                         List<String> tempSelected = List<String>.from(
-                          reportedBy.where((name) => reportedByOptions.contains(name)),
+                          reportedBy.where(
+                            (name) => reportedByOptions.contains(name),
+                          ),
                         );
                         String otherName = '';
                         // If previously selected, try to extract the custom name
@@ -573,7 +582,9 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                                   children: [
                                     ...reportedByOptions.map((name) {
                                       return Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 0),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 0,
+                                        ),
                                         child: CheckboxListTile(
                                           value: tempSelected.contains(name),
                                           title: Text(name),
@@ -593,7 +604,12 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                                       );
                                     }).toList(),
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 16.0, left: 0, right: 0, bottom: 0),
+                                      padding: const EdgeInsets.only(
+                                        top: 16.0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                      ),
                                       child: TextField(
                                         autofocus: false,
                                         style: const TextStyle(
@@ -610,17 +626,26 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                                           ),
                                           filled: true,
                                           fillColor: Colors.white,
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 14,
-                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 14,
+                                              ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFFE0E0E0),
+                                            ),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFFE0E0E0),
+                                            ),
                                           ),
                                         ),
                                         onChanged: (val) {
@@ -628,12 +653,16 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                                             otherName = val;
                                           });
                                         },
-                                        controller: TextEditingController.fromValue(
-                                          TextEditingValue(
-                                            text: otherName,
-                                            selection: TextSelection.collapsed(offset: otherName.length),
-                                          ),
-                                        ),
+                                        controller:
+                                            TextEditingController.fromValue(
+                                              TextEditingValue(
+                                                text: otherName,
+                                                selection:
+                                                    TextSelection.collapsed(
+                                                      offset: otherName.length,
+                                                    ),
+                                              ),
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -642,12 +671,18 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                               actions: [
                                 TextButton(
                                   style: TextButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     minimumSize: Size(0, 0),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   onPressed: () {
-                                    final result = List<String>.from(tempSelected);
+                                    final result = List<String>.from(
+                                      tempSelected,
+                                    );
                                     if (otherName.trim().isNotEmpty) {
                                       result.add(otherName.trim());
                                     }
@@ -740,7 +775,7 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                     child: signaturePreview != null
                         ? Image.memory(signaturePreview!, height: 64)
                         : (signatureUrl != null
-                            ? Image.network(signatureUrl!, height: 64)
+                              ? Image.network(signatureUrl!, height: 64)
                               : const Text(
                                   'Tap to sign',
                                   style: TextStyle(color: Colors.grey),
@@ -756,6 +791,73 @@ class _FormEntryScreenState extends State<FormEntryScreen> {
                 _StarRating(
                   rating: rating,
                   onChanged: (v) => setState(() => rating = v),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            statusCompleted
+                                ? Icons.check_circle
+                                : Icons.timelapse,
+                            color: statusCompleted
+                                ? Color(0xFF7ED957)
+                                : Colors.orange,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Status',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  statusCompleted ? 'Completed' : 'Ongoing',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 14,
+                                    color: statusCompleted
+                                        ? Color(0xFF7ED957)
+                                        : Colors.orange,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: statusCompleted,
+                            onChanged: (val) {
+                              setState(() {
+                                statusCompleted = val;
+                              });
+                            },
+                            activeColor: Color(0xFF7ED957),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -912,26 +1014,26 @@ class _FormTextField extends StatelessWidget {
         decoration:
             decoration ??
             InputDecoration(
-          hintText: hint,
+              hintText: hint,
               hintStyle: const TextStyle(
                 fontFamily: 'Poppins',
                 color: Colors.grey,
               ),
-          filled: true,
-          fillColor: Colors.white,
+              filled: true,
+              fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
               ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-          ),
-        ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              ),
+            ),
         onSaved: onSaved,
         validator: validator,
         initialValue: controller == null ? initialValue : null,
@@ -1259,4 +1361,4 @@ class _StarRating extends StatelessWidget {
       }),
     );
   }
-} 
+}

@@ -44,7 +44,112 @@ class FormsScreen extends StatefulWidget {
   State<FormsScreen> createState() => _FormsScreenState();
 }
 
+// --- Status Filter Button Widget ---
+class _StatusFilterButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _StatusFilterButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF7ED957) : Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF7ED957)
+                  : const Color(0xFFE0E0E0),
+              width: 1.5,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF7ED957).withOpacity(0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: selected ? Colors.white : Colors.black,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentedFilterButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool left;
+  final bool right;
+  const _SegmentedFilterButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.left = false,
+    this.right = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF7ED957) : Colors.transparent,
+            borderRadius: BorderRadius.only(
+              topLeft: left ? const Radius.circular(12) : Radius.zero,
+              bottomLeft: left ? const Radius.circular(12) : Radius.zero,
+              topRight: right ? const Radius.circular(12) : Radius.zero,
+              bottomRight: right ? const Radius.circular(12) : Radius.zero,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: selected ? Colors.white : Colors.black,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FormsScreenState extends State<FormsScreen> {
+  // Status filter: 0 = ALL, 1 = ONGOING, 2 = COMPLETED
+  int _statusFilter = 0;
   // For multi-select
   bool _selectionMode = false;
   final Set<String> _selectedFormIds = {};
@@ -70,13 +175,13 @@ class _FormsScreenState extends State<FormsScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFE0E0E0)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -93,13 +198,13 @@ class _FormsScreenState extends State<FormsScreen> {
                               ? Colors.white
                               : Colors.transparent,
                           borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(i == 0 ? 12 : 0),
-                            bottomLeft: Radius.circular(i == 0 ? 12 : 0),
-                            topRight: Radius.circular(i == 1 ? 12 : 0),
-                            bottomRight: Radius.circular(i == 1 ? 12 : 0),
+                            topLeft: Radius.circular(i == 0 ? 10 : 0),
+                            bottomLeft: Radius.circular(i == 0 ? 10 : 0),
+                            topRight: Radius.circular(i == 1 ? 10 : 0),
+                            bottomRight: Radius.circular(i == 1 ? 10 : 0),
                           ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
                         child: Column(
                           children: [
                             Text(
@@ -109,7 +214,7 @@ class _FormsScreenState extends State<FormsScreen> {
                                 fontWeight: _selectedTabIndex == i
                                     ? FontWeight.w700
                                     : FontWeight.w500,
-                                fontSize: 16,
+                                fontSize: 15,
                                 color: _selectedTabIndex == i
                                     ? const Color(0xFF22B14C)
                                     : Colors.black,
@@ -117,9 +222,9 @@ class _FormsScreenState extends State<FormsScreen> {
                             ),
                             if (_selectedTabIndex == i)
                               Container(
-                                margin: const EdgeInsets.only(top: 6),
-                                height: 3,
-                                width: 36,
+                                margin: const EdgeInsets.only(top: 4),
+                                height: 2,
+                                width: 28,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF22B14C),
                                   borderRadius: BorderRadius.circular(2),
@@ -134,12 +239,12 @@ class _FormsScreenState extends State<FormsScreen> {
               ),
             ),
           ),
-          // ...existing code...
+          const SizedBox(height: 12),
           Padding(
-            padding: const EdgeInsets.only(top: 20, left: 24, right: 24),
+            padding: const EdgeInsets.only(left: 12, right: 12),
             child: Material(
-              elevation: 1.5,
-              borderRadius: BorderRadius.circular(12),
+              elevation: 1,
+              borderRadius: BorderRadius.circular(10),
               color: Colors.white,
               child: TextField(
                 controller: _searchController,
@@ -155,21 +260,64 @@ class _FormsScreenState extends State<FormsScreen> {
                     color: Color(0xFF7ED957),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                    horizontal: 16,
+                    vertical: 10,
+                    horizontal: 12,
                   ),
                 ),
                 style: const TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 16,
+                  fontSize: 15,
                   color: Colors.black,
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 12, right: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE0E0E0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  _SegmentedFilterButton(
+                    label: 'ALL',
+                    selected: _statusFilter == 0,
+                    onTap: () => setState(() => _statusFilter = 0),
+                    left: true,
+                    right: false,
+                  ),
+                  _SegmentedFilterButton(
+                    label: 'ONGOING',
+                    selected: _statusFilter == 1,
+                    onTap: () => setState(() => _statusFilter = 1),
+                    left: false,
+                    right: false,
+                  ),
+                  _SegmentedFilterButton(
+                    label: 'COMPLETED',
+                    selected: _statusFilter == 2,
+                    onTap: () => setState(() => _statusFilter = 2),
+                    left: false,
+                    right: true,
+                  ),
+                ],
               ),
             ),
           ),
@@ -182,7 +330,6 @@ class _FormsScreenState extends State<FormsScreen> {
                 if (_selectionMode &&
                     _selectedFormIds.isNotEmpty &&
                     snapshot.hasData) {
-                  // Show delete selected bar inside StreamBuilder so snapshot is available
                   return Column(
                     children: [
                       Padding(
@@ -350,10 +497,15 @@ class _FormsScreenState extends State<FormsScreen> {
             (_selectedTabIndex == 0 && f.taskId.startsWith('LTS-')) ||
             (_selectedTabIndex == 1 && f.taskId.startsWith('LCS-'));
         if (!matchesTab) return false;
+        // Status filter
+        if (_statusFilter == 1 && (f.status.toLowerCase() != 'ongoing'))
+          return false;
+        if (_statusFilter == 2 && (f.status.toLowerCase() != 'completed'))
+          return false;
         if (_search.isEmpty) return true;
         final q = _search.toLowerCase();
         return f.taskId.toLowerCase().contains(q) ||
-            (f.companyName?.toLowerCase().contains(q) ?? false) ||
+            f.companyName.toLowerCase().contains(q) ||
             (f.phone?.toLowerCase().contains(q) ?? false) ||
             (f.problemDescription?.toLowerCase().contains(q) ?? false) ||
             (f.reportDescription?.toLowerCase().contains(q) ?? false) ||
@@ -388,7 +540,7 @@ class _FormsScreenState extends State<FormsScreen> {
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           itemCount: filtered.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => const SizedBox(height: 4),
           itemBuilder: (context, i) {
             final form = filtered[i];
             final isSelected = _selectedFormIds.contains(form.id);
@@ -401,11 +553,12 @@ class _FormsScreenState extends State<FormsScreen> {
               },
               child: Card(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                elevation: 1.5,
+                elevation: 0.8,
                 color: isSelected ? Colors.red[50] : Colors.white,
-                shadowColor: const Color(0xFF7ED957).withOpacity(0.08),
+                shadowColor: const Color(0xFF7ED957).withOpacity(0.05),
+                margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                 child: ListTile(
                   leading: _selectionMode
                       ? Checkbox(
@@ -422,23 +575,32 @@ class _FormsScreenState extends State<FormsScreen> {
                               }
                             });
                           },
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                         )
                       : null,
                   title: Text(
                     '${form.taskId}_${form.companyName}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: const Color(0xFF222222),
+                      fontSize: 15,
+                      color: (form.status.toLowerCase() == 'ongoing')
+                          ? Colors.orange
+                          : (form.status.toLowerCase() == 'completed')
+                          ? const Color(0xFF7ED957)
+                          : const Color(0xFF222222),
                       fontFamily: 'Poppins',
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(
                     DateFormat(
                       'dd MMM yyyy, hh:mm a',
                     ).format(form.createdAt.toLocal()),
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.grey,
                       fontFamily: 'Nunito',
                     ),
@@ -447,11 +609,12 @@ class _FormsScreenState extends State<FormsScreen> {
                       ? PopupMenuButton<String>(
                           color: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           icon: const Icon(
                             Icons.more_vert,
                             color: Color(0xFF7ED957),
+                            size: 20,
                           ),
                           onSelected: (value) async {
                             if (value == 'edit') {
@@ -481,7 +644,7 @@ class _FormsScreenState extends State<FormsScreen> {
                                   dateTime: DateFormat(
                                     'dd MMM yyyy, hh:mm a',
                                   ).format(form.createdAt.toLocal()),
-                                  companyName: form.companyName ?? '',
+                                  companyName: form.companyName,
                                   phone: form.phone ?? '',
                                   addressLine: form.addressLine ?? '',
                                   addressCity: form.addressCity ?? '',
@@ -502,7 +665,7 @@ class _FormsScreenState extends State<FormsScreen> {
                                     form.signatureUrl,
                                   ),
                                   rating: form.rating ?? 0,
-                                  formType: form.formType ?? 'LTCR',
+                                  formType: form.formType,
                                 );
                                 Navigator.of(
                                   context,

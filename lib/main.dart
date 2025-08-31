@@ -6,7 +6,7 @@ import 'screens/change_password_screen.dart';
 import 'widgets/lenient_app_bar.dart';
 import 'widgets/lenient_nav_bar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'constants/supabase_keys.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -20,6 +20,7 @@ import 'services/database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
   await clearAppCache();
   runApp(const PermissionGateApp());
 }
@@ -63,8 +64,8 @@ class _PermissionGateState extends State<PermissionGate> {
     });
     if (granted) {
       await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseAnonKey,
+        url: dotenv.env['SUPABASE_URL']!,
+        anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       );
     }
   }
